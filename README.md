@@ -67,6 +67,7 @@ css/style.css         All styles (colors are tokens at the top)
 js/game.js            The whole game: textures, pieces, characters, controls, saving
 js/firebase-config.js Firebase project settings (public values) for online saving
 CHANGELOG.md          What changed in each version
+CLAUDE.md             Project rules and context for Claude Code
 docs/PROGRESS.md      Current status, what's done, what's next, known issues
 docs/ROADMAP.md       Future milestones (v1.1 → v3.0) and how to release a version
 docs/ARCHITECTURE.md  How the code works and the save-file format
