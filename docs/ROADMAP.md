@@ -1,14 +1,14 @@
 # Roadmap
 
-_Current version: **v1.0.0** (26 Nov 2026). Last updated: 26 Nov 2026._
+_Current version: **v1.1.0** (26 Nov 2026). Last updated: 26 Nov 2026._
 
 This lists planned milestones in order. Each one has a goal, what's in it, and how we'll know it's done. Sizes are rough: **S** is an evening, **M** a few sessions, **L** a week or more of sessions. Plans can change; when they do, update this file and [PROGRESS.md](PROGRESS.md).
 
 | Version | Theme | Status |
 |---|---|---|
 | [v1.0](#v10--the-castle-builder-released) | The castle builder | ✅ Released 26 Nov 2026 |
-| [v1.1](#v11--smooth-and-solid) | Smooth and solid | 🔜 Next |
-| [v1.2](#v12--a-livelier-island) | A livelier island | Planned |
+| [v1.1](#v11--smooth-and-solid) | Smooth and solid (plus furniture) | ✅ Built 26 Nov 2026 · two checks on real devices left |
+| [v1.2](#v12--a-livelier-island) | A livelier island | 🔜 Next |
 | [v1.3](#v13--many-castles) | Many castles | Planned |
 | [v2.0](#v20--quests-and-challenges) | Quests and challenges | Planned |
 | [v3.0](#v30--build-together) | Build together | Idea |
@@ -32,13 +32,14 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 | Item | Size |
 |---|---|
 | ✅ Confirm online saving end to end: real Google sign-in saves online (confirmed 26 Nov 2026). Remaining: edit on two devices at once to watch live sync | S |
-| Faster drawing for big castles: draw identical blocks in one batch (instancing), so 2,000+ blocks stay smooth on a tablet | M |
-| Fix see-through glitches when glass or ice blocks are stacked | S |
-| "How to play" card on first visit (spin, zoom, build, erase), reopenable from the ⋯ menu | S |
-| Screenshot button that saves a picture of the castle | S |
-| Show a short message when the device is offline, and confirm saves resume when it's back | S |
+| ✅ Faster drawing for big castles: identical blocks drawn in one batch (instancing). A 2,000-block castle with 20 characters dropped from about 4,400 to about 200 draw calls per frame | M |
+| ✅ Fix see-through glitches when glass or ice blocks are stacked | S |
+| ✅ "How to play" card on first visit (spin, zoom, build, erase), reopenable from the ⋯ menu | S |
+| ✅ Screenshot button that saves a picture of the castle (⋯ → **Save a picture**) | S |
+| ✅ Show a short message when the device is offline, and confirm saves resume when it's back | S |
+| ✅ Added on request: a **Furniture** tab with 12 pieces (table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench, barrel) | M |
 
-**Done when:** a 2,000-block castle with 20 characters runs smoothly on the oldest tablet in the house, and online saves work across two devices.
+**Done when:** a 2,000-block castle with 20 characters runs smoothly on the oldest tablet in the house, and online saves work across two devices. _Both still need a check on real devices (see [PROGRESS.md](PROGRESS.md))._
 
 ## v1.2 — A livelier island
 
@@ -47,8 +48,8 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 | Item | Size |
 |---|---|
 | New characters, all original designs: horse, dog, owl, and a friendly ghost that only appears at night | M |
-| Smarter characters: follow paths, sit on benches, gather around torches at night; the dragon lands on towers | M |
-| New pieces: arch, bridge, ladder, well, banner (in colors), bench, flower bed | M |
+| Smarter characters: follow paths, sit on benches, chairs and thrones, sleep in beds at night, gather around torches and fireplaces; the dragon lands on towers | M |
+| New pieces: arch, bridge, ladder, well, banner (in colors), flower bed (the bench arrived early, in v1.1's Furniture tab) | M |
 | Automatic day–night cycle (optional), with a sunrise and sunset | S |
 | Weather: rain and snow you can turn on | S |
 

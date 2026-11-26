@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Stack-a-Castle</title>
-  <meta name="description" content="A 3D castle builder you play in the browser: stack blocks, add characters, switch day and night.">
+  <meta name="description" content="A 3D castle builder you play in the browser: stack blocks, add furniture and characters, switch day and night.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Pirata+One&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=1.0.0">
+  <link rel="stylesheet" href="css/style.css?v=1.1.0">
 </head>
 <body>
 <div id="app">
@@ -43,6 +43,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V8h3v2.5h2.5V8h3v2.5H14V8h3v2.5h1V8h3v13z"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg>
             <span>Build sample castle</span>
           </button>
+          <button type="button" role="menuitem" id="m-picture">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+            <span>Save a picture</span>
+          </button>
           <button type="button" role="menuitem" id="m-view">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg>
             <span>Reset the view</span>
@@ -65,11 +69,15 @@
             <span>Open a saved file</span>
           </button>
           <hr>
+          <button type="button" role="menuitem" id="m-help">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.6"/><path d="M12 16.8v.2"/></svg>
+            <span>How to play</span>
+          </button>
           <button type="button" role="menuitem" id="m-clear" class="danger">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
             <span id="clear-label">Clear everything</span>
           </button>
-          <p class="menu-version">Stack-a-Castle v1.0.0</p>
+          <p class="menu-version">Stack-a-Castle v1.1.0</p>
         </div>
       </div>
     </header>
@@ -92,6 +100,7 @@
             <button class="tab" type="button" role="tab" data-cat="castle" aria-selected="true">Castle</button>
             <button class="tab" type="button" role="tab" data-cat="nature" aria-selected="false">Nature</button>
             <button class="tab" type="button" role="tab" data-cat="build" aria-selected="false">Build</button>
+            <button class="tab" type="button" role="tab" data-cat="furniture" aria-selected="false">Furniture</button>
             <button class="tab" type="button" role="tab" data-cat="characters" aria-selected="false">Characters</button>
           </div>
           <div class="palette" id="palette" aria-label="Pieces"></div>
@@ -112,6 +121,37 @@
     </div>
   </div>
 
+  <div class="modal" id="help" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+    <div class="modal-card">
+      <h2 id="help-title">How to play</h2>
+      <ol class="steps">
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5v5h-5"/></svg>
+          <p><b>Spin</b> <span class="for-touch">Drag with one finger to spin the island.</span><span class="for-mouse">Drag with the mouse to spin the island.</span></p>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/><path d="M10.5 7.8v5.4M7.8 10.5h5.4"/></svg>
+          <p><b>Zoom</b> <span class="for-touch">Pinch to zoom in and out. Drag with two fingers to move around.</span><span class="for-mouse">Scroll to zoom in and out. Drag with the right button to move around.</span></p>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12 4 7.5"/></svg>
+          <p><b>Build</b> <span class="for-touch">Pick a piece at the bottom, then tap the grass or the side of a block.</span><span class="for-mouse">Pick a piece at the bottom, then click the grass or the side of a block.</span></p>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 20h12"/><path d="M5.6 13.4 13 6a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8L11.8 19.2H8.6l-3-3a2 2 0 0 1 0-2.8z"/><path d="m9.5 9.8 5.2 5.2"/></svg>
+          <p><b>Erase</b> <span class="for-touch">Tap Erase, then tap a piece to take it away.</span><span class="for-mouse">Right-click a piece to take it away, or press E for Erase.</span></p>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+          <p><b>Oops?</b> <span class="for-touch">The Undo arrow at the top puts it back.</span><span class="for-mouse">The Undo arrow at the top (or Ctrl+Z) puts it back.</span></p>
+        </li>
+      </ol>
+      <button type="button" class="choice primary start" id="help-close">Let’s build!</button>
+      <p class="modal-note">You can open this again from the ⋯ menu.</p>
+    </div>
+  </div>
+
+  <div class="flash" id="flash" aria-hidden="true"></div>
   <div class="fail" id="fail" hidden><p></p></div>
 </div>
 
@@ -125,7 +165,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script defer src="js/firebase-config.js?v=1.0.0"></script>
-<script defer src="js/game.js?v=1.0.0"></script>
+<script defer src="js/firebase-config.js?v=1.1.0"></script>
+<script defer src="js/game.js?v=1.1.0"></script>
 </body>
 </html>
