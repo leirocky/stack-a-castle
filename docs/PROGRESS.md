@@ -1,10 +1,22 @@
 # Project progress
 
-_Last updated: 26 Nov 2026 · Current version: **v1.0.0**_
+_Last updated: 26 Nov 2026 · Current version: **v1.1.0**_
 
 ## Where things stand
 
-**v1.0.0 is released** (26 Nov 2026): the game is complete, playable and hosted on GitHub Pages. Saving works on the device, through file backups, and online with Google sign-in (Firebase). Online saving was confirmed with a real Google sign-in on the live site (26 Nov 2026). **Working toward v1.1, "Smooth and solid"** (see [ROADMAP.md](ROADMAP.md)).
+**v1.1.0 is built** (26 Nov 2026): every v1.1 "Smooth and solid" item is done, plus a new **Furniture** tab. It goes live when the pull request is merged into `main`; then create the GitHub release (steps in [ROADMAP.md](ROADMAP.md#releasing-a-version)). Two checks need real devices (see **Next up**). After that, work moves to **v1.2, "A livelier island"**.
+
+v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file backups, and online with Google sign-in (Firebase), confirmed with a real Google sign-in on the live site.
+
+## History (v1.1)
+
+| Date | What changed |
+|---|---|
+| 26 Nov 2026 | **Furniture tab:** table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench, barrel. They turn to face you; candles, flowers and rugs sit down onto low furniture; candles and the fireplace glow at night; characters walk around furniture, over rugs, and onto beds, chests and barrels. |
+| 26 Nov 2026 | **Faster drawing:** blocks drawn in batches (instancing), characters merged into fewer meshes, glow sprites skipped by day. Measured in a test browser with a 2,000-block castle and 21 characters: about 4,400 draw calls per frame before, about 200 after. The sample castle went from about 980 to about 160. Tapping now walks the grid instead of testing one hidden box per block. The game lowers its resolution a little if a device can't keep up. |
+| 26 Nov 2026 | **Glass and ice fix:** one merged mesh with hidden inside faces, sorted far to near whenever the camera moves. |
+| 26 Nov 2026 | **How to play** card (first visit, and ⋯ menu), **Save a picture** (⋯ menu), and **offline** messages. Saves from a newer game version are no longer loaded or overwritten. |
+| 26 Nov 2026 | Tested in a headless browser at desktop and phone width: placing and erasing by click and tap, every tab, undo, the animated sample castle, reload, save and open a file, the picture, offline and back, and online saving against a simulated Firebase (first upload, live update from another device, offline catch-up, newer-version save). No console errors. |
 
 ## History (v1.0 development)
 
@@ -20,22 +32,24 @@ _Last updated: 26 Nov 2026 · Current version: **v1.0.0**_
 | 26 Nov 2026 | **Online saving:** optional Google sign-in in the ⋯ menu; castles stored in Firestore and synced live across devices. If the account and the device have different castles at sign-in, the player picks which to keep, and Undo can switch back. The Claude-only save code was removed. Tested with a simulated Firebase: first sign-in, both choices, returning visits, sign-out, and refused saves. |
 | 26 Nov 2026 | Version numbers (`?v=`) on the CSS and JS links, so browsers load new code right after a deploy instead of a cached copy. |
 
-## Next up (v1.1)
+## Next up
 
-1. ~~Confirm online saving on the live site~~ ✅ Done 26 Nov 2026: real Google sign-in saves online. Still worth a check: edit on two devices at once and watch the live sync.
-2. **Faster drawing for big castles** (instancing).
-3. **Fix see-through glitches** with stacked glass and ice.
-4. **"How to play" card**, **screenshot button**, and an **offline message**.
+1. **Merge and release v1.1.0**, then reload the game on every family device (see the first known issue).
+2. **Check on the oldest tablet:** open a big castle (about 2,000 blocks, 20 characters) and see that spinning and building feel smooth. This finishes v1.1's "done when".
+3. **Check live sync:** sign in on two devices, build on one, and watch the other update.
+4. Then **v1.2, "A livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
 
-The full list, and the milestones after it (v1.2 livelier island, v1.3 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
+The full list, and the milestones after it (v1.3 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
 
 ## Known issues and limits
 
+- **After an update, reload the game on every device.** A copy of v1.0 left open in a tab can't read castles that contain furniture, and its next save online could overwrite them. Reloading the page fixes it. (From v1.1 on, the game spots saves from a newer version and stops instead.)
+- **Pieces placed on a rug or slab** sit a full block up, like in other block-building games. Candles, flowers and rugs are the exception: they sit down onto low furniture.
 - **Without signing in, saves live in one browser on one device.** Clearing site data deletes them. Sign in, or use **Save to a file**.
 - **Two devices editing at once:** the last save wins. Edits made on both devices within the same second or two can overwrite each other.
 - **Sign-in popups:** if a browser blocks the Google popup, the game falls back to a full-page redirect. Safari's privacy settings can make that redirect fail; allowing popups for the site fixes it.
-- **Performance:** older phones may slow down with several hundred blocks plus many characters, because each block is drawn separately. Possible fix: draw identical blocks as one batch (instancing).
-- **Glass and ice:** see-through blocks stacked together can show sorting glitches from some angles.
+- **Performance:** big castles are now drawn in batches. It has not been timed on a real old tablet yet (see **Next up**). Torches, candles and fireplaces are still drawn one by one, so hundreds of them would cost more.
+- **Glass and ice:** they no longer glitch with each other. Other see-through things (the build cursor, glow at night) can still overlap them slightly wrongly from some angles.
 - **Characters** walk in four directions, step up at most one block, and drop at most two. Characters placed on a very tall build stay up there. The dragon only flies in circles.
 - **Older saves** (from before characters existed) load with a starter set of characters.
 - **Two copies exist:** this repo is the source of truth. The Claude artifact version is an earlier copy that saves to a Claude account; changes here are not copied there automatically. To move a castle across, use **Save to a file** in one and **Open a saved file** in the other.
@@ -52,3 +66,7 @@ The full list, and the milestones after it (v1.2 livelier island, v1.3 many cast
 | Sign-in is optional | A child can play right away; a parent signs in on devices that should sync. |
 | Firebase **compat** SDK from Google's CDN | Works with plain `<script>` tags and the existing non-module code. |
 | Ask, don't guess, at first sign-in | If the account and the device both have castles that differ, guessing could silently lose one. Later visits sync automatically using timestamps. |
+| Batches (instancing) for blocks, not merging them into one big mesh | Placing or erasing a block only updates one slot, so building stays instant even in huge castles. |
+| One sorted mesh for glass and ice | Sorting faces is the reliable way to draw see-through blocks in the right order. There are few glass and ice blocks, so re-sorting when the camera moves is cheap. |
+| Furniture fits in one square | Keeps the grid, saving and undo simple. A one-square bed is just the right size for the characters. |
+| No save-format change for furniture | Pieces are saved by name, so new pieces need no new version. Older saves load as before. |

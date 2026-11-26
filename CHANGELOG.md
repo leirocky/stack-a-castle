@@ -2,6 +2,34 @@
 
 All notable changes, newest first. Planned work is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## v1.1.0 — 26 Nov 2026
+
+"Smooth and solid", plus furniture.
+
+**New: Furniture**
+- A new **Furniture** tab with 12 pieces: table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench and barrel. All are original designs.
+- Furniture turns to face you when placed. Tables side by side make one long table.
+- Candles, flowers and rugs sit down onto tables, beds, chests, benches and slabs instead of floating above them.
+- Candles and the fireplace flicker, and glow at night.
+- Characters walk around furniture, walk over rugs, and can hop up onto beds, chests and barrels.
+
+**Faster**
+- Blocks are drawn in batches. A 2,000-block castle with 20 characters needs about 200 draw calls per frame instead of about 4,400.
+- Characters are drawn with fewer pieces each.
+- Tapping finds the block with a quick walk through the grid, so it stays instant in big castles.
+- If a device can't keep up, the game lowers its drawing resolution a little to stay smooth.
+
+**Fixes**
+- Stacked glass and ice no longer flicker or hide each other: shared inside faces are left out and the rest are drawn from far to near.
+- Glass next to a solid block no longer flickers where they touch.
+
+**Easier to use**
+- A **How to play** card on the first visit, also in the ⋯ menu.
+- **Save a picture** in the ⋯ menu saves a picture of your castle (on phones and tablets it opens the share sheet, with "Save image").
+- A message when the device goes offline, and when it's back. While signed in, the save status shows "Offline" and saving resumes by itself.
+- If an online save or file was made by a newer version of the game, the game asks you to reload instead of overwriting it.
+- On narrow screens the tab row fades at the edge to show there are more tabs. The ⋯ menu scrolls on short screens.
+
 ## v1.0.0 — 26 Nov 2026
 
 The first release.

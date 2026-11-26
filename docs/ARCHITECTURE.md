@@ -5,16 +5,48 @@ Everything runs in the browser. `index.html` holds the markup, `css/style.css` t
 ## The world
 
 - The island is a grid of cells, `x` and `z` from −50 to 49, `y` from 0 to 31. Ground level is `y = 0`.
-- Placed blocks live in a `Map` called `world`, keyed `"x,y,z"`, with the piece type (`t`) and rotation (`r`).
-- Each block is drawn with its own mesh. An invisible 1 × 1 × 1 box for each block (`hitGroup`) is used for tap detection, so odd shapes like flags and roofs are still easy to tap.
-- Tapping casts a ray from the camera. Hitting the side of a block places a new block against that face; hitting the grass places it on the ground.
+- Placed blocks live in a `Map` called `world`, keyed `"x,y,z"`. Each record holds the piece type (`t`), rotation (`r`), its `x, y, z`, and how it is drawn (see **Drawing blocks**).
+- Tapping casts a ray from the camera and walks it square by square through the grid (a "voxel walk", `pickCell`) until it reaches a filled square or the grass. Hitting the side of a block places a new block against that face; hitting the grass places it on the ground. The whole square counts as the block, so odd shapes like flags and roofs are easy to tap. The walk takes the same time whether the castle has 10 blocks or 10,000.
+- Characters are tapped with an ordinary raycast against an invisible box on each one. Whichever is nearer, character or block, wins.
 - A tap is a press and release that moved less than 5 px (mouse) or 10 px (touch). Anything longer is treated as spinning the camera.
+
+## Drawing blocks
+
+Drawing one mesh per block got slow on tablets once a castle had a few hundred blocks, so blocks are drawn in batches.
+
+- **Batches.** Each part of a piece (a tree's trunk, its two leaf clumps) is one `InstancedMesh` that holds every block of that kind. A batch is built from `makePiece(id, 0)` the first time that piece appears. Adding a block writes its position and turn into the next free slot; removing one moves the last block into the gap. A 2,000-block castle with 20 characters went from about 4,400 draw calls per frame to about 200.
+- Batches have `frustumCulled = false`. Three.js r128 would otherwise decide whether to draw the whole batch from the first block's position alone.
+- **Solo pieces** (`SOLO`: torch, candles, fireplace) have flickering flames, so each is its own object, animated through the `flickers` set. Lamps and lanterns are batched; only their glow sprites are separate.
+- Glow sprites are switched off in daylight (`M.glow.visible`), so they cost nothing by day.
+- **Popping in.** A newly placed block is shown as its own object (`rec.temp`) while it grows, then joins its batch. Castles over 1,200 blocks appear at once instead of popping.
+- **Resting pieces** (`RESTS`: candles, flowers, rug) are drawn lower when the piece under them is shorter than a block (heights in `TOP`), so candles stand on a table instead of floating above it. They move when the piece under them is added or removed.
+
+### See-through blocks (glass and ice)
+
+All glass and ice blocks are built into one mesh (`buildClear`), using one texture that holds both looks. A face is left out when the block next to it is the same kind (so a glass wall has no inner walls) or a solid block from `FULL` (so the two faces don't flicker against each other). Whenever the camera moves, the faces are sorted from far to near (`sortClear`) and drawn in that order. This fixes the old glitches where stacked glass or ice hid or flickered over each other from some angles. The mesh is rebuilt when a glass or ice block, or a block next to one, changes.
+
+### Keeping it smooth
+
+The loop watches frame times. If frames take longer than 1/40 of a second for two 2-second stretches in a row, the drawing resolution drops by a quarter step, down to one pixel per screen point. It never goes back up during a visit.
 
 ## Pieces
 
-`PIECES` lists every piece with its id, name, tray color and tab (`castle`, `nature`, `build`, `characters`). `makePiece(id, rot)` builds the 3D object. Textures are drawn on `<canvas>` by the functions in the **procedural textures** section and shared between blocks. Tray icons are rendered once at startup with a second, temporary WebGL renderer.
+`PIECES` lists every piece with its id, name, tray color and tab (`castle`, `nature`, `build`, `furniture`, `characters`). `makePiece(id, rot)` builds the 3D object. Textures are drawn on `<canvas>` by the functions in the **procedural textures** section and shared between blocks. Tray icons are rendered once at startup with a second, temporary WebGL renderer.
 
-To add a block: add an entry to `PIECES`, a `case` in `makePiece`, and any new texture or material.
+Pieces with a front turn to face the player when placed. `FACE4` pieces (stairs and most furniture) turn four ways, so their front points at the camera; `FACE2` pieces (gate, fence, door) line up across the view. The turn is saved as the rotation `r` (0–3).
+
+To add a block:
+
+1. Add an entry to `PIECES` and a `case` in `makePiece` (front facing +z), plus any new texture or material.
+2. If it turns to face the player, add it to `FACE4` or `FACE2`.
+3. If it is shorter than a block and characters or small items should sit on it, add its top height to `TOP`.
+4. If it flickers, add it to `SOLO`. If it is a solid, full-size cube, add it to `FULL`.
+5. Decide whether characters can stand on it (`NOSTAND`) or walk through it (`PASS`).
+6. If its icon looks off, add a camera tweak to `ICON_VIEW`.
+
+### Furniture
+
+Twelve pieces in the **Furniture** tab: table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench and barrel. All are original designs built from simple shapes, and each fits in one square. Tables placed side by side join into one long table. Candles and the fireplace glow at night.
 
 ## Characters
 
@@ -22,7 +54,8 @@ Characters (`chars`) are separate from blocks and are not part of the grid map. 
 
 - **Idle:** wait a random time, then pick a neighboring cell. Steps can go up one block or down one or two. The character is pulled back toward home if it wanders more than 9 cells away.
 - **Walking:** move to the chosen cell over a set time, with a bounce and a turn toward the direction of travel.
-- A cell is walkable if it's empty, or is a gate or door, and it stands on the ground or a solid block. Water, lava, roofs, flags, torches, trees, fences, lanterns and doors don't count as solid ground.
+- A cell is walkable if it's empty, or is a gate, door or rug, and it stands on the ground or a solid block. Water, lava, roofs, flags, torches, trees, fences, lanterns and doors don't count as solid ground, and nor do tables, chairs, benches, thrones, candles, flowers and rugs. Characters can climb onto beds, chests, barrels, bookshelves and fireplaces, and stand at the piece's real height (`TOP`).
+- Each character is built from many small shapes. Shapes that share a material are merged into one mesh, once per kind, so a character costs a handful of draw calls instead of about 15.
 - If a block is placed where a character stands, or the block under it is removed, it moves to the nearest standing spot in that column.
 - The dragon ignores the grid and circles 7 cells around its home, 7 cells up.
 
@@ -56,6 +89,10 @@ When the online save first answers, the game compares it with the castle on scre
 
 Anything built during the second or two of connecting is replayed on top of whichever castle is kept.
 
+**Offline.** When the browser reports that it is offline, the game shows a short message, and while signed in the save status reads "Offline". Firebase holds the waiting save; when the connection comes back the game says so, the save goes through, and the status returns to "Saved online".
+
+**Saves from a newer version.** If the online castle, or an opened file, uses pieces or characters this copy of the game doesn't know, it was saved by a newer version. The game leaves the castle on screen alone and asks the player to reload. For an online save it also stops saving online for that visit, so it can't overwrite the newer castle. (Version 1.0 doesn't have this check; see the known issues in PROGRESS.md.)
+
 ## Save format (version 3)
 
 Used for online saves and for **Save to a file**:
@@ -76,3 +113,4 @@ Used for online saves and for **Save to a file**:
 - `chars` is a flat list of 4 numbers per character: `kind index into charKinds, x, y, z`. For the dragon, the cell is its home.
 - Pieces are saved by name through the `pieces` list, so reordering or adding pieces never breaks old saves.
 - Files without `chars` (version 2) load fine; the device keeps its own characters.
+- Version 1.1 added the furniture pieces without changing the format: new pieces just add names to `pieces`.
