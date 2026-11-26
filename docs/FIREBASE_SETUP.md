@@ -1,6 +1,8 @@
-# Turning on online saving (Firebase)
+# Online saving setup (Firebase)
 
-This is a one-time setup, about 10 minutes, done by the repo owner in a web browser. When it's finished, send the config from step 2. The code changes are tracked in [PROGRESS.md](PROGRESS.md).
+**Status: done (26 Nov 2026).** The project is `stack-a-castle`, and its settings are in [`js/firebase-config.js`](../js/firebase-config.js). These steps are kept as a record, and for setting up a copy of the game under another Firebase project.
+
+Firebase redesigned its console in 2026: there is no "Build" menu anymore. Use the **Search for products** box at the top left, or the product categories in the left menu (**Security** holds Authentication, **Databases & Storage** holds Firestore).
 
 Firebase's free **Spark** plan is enough. It allows tens of thousands of saves a day; this game uses a handful per play session. No credit card is needed.
 
@@ -35,7 +37,7 @@ Firebase's free **Spark** plan is enough. It allows tens of thousands of saves a
 
 ## 3. Turn on Google sign-in
 
-1. In the left menu: **Build → Authentication → Get started**.
+1. Open **Authentication** (search for it, or left menu **Security → Authentication**), then click **Get started**.
 2. On the **Sign-in method** tab, click **Google**.
 3. Switch **Enable** on, choose your email as the support email, then click **Save**.
 
@@ -46,7 +48,7 @@ Firebase's free **Spark** plan is enough. It allows tens of thousands of saves a
 
 ## 5. Create the database and lock it down
 
-1. Left menu: **Build → Firestore Database → Create database**.
+1. Open **Firestore** (search for it, or left menu **Databases & Storage → Firestore**), then click **Create database**.
 2. Location: pick a US one (for example **nam5** or **us-west1**). This can't be changed later.
 3. Start in **production mode**, then click **Create**.
 4. Open the **Rules** tab, replace everything with the following, and click **Publish**:
@@ -63,14 +65,20 @@ Firebase's free **Spark** plan is enough. It allows tens of thousands of saves a
    }
    ```
 
-## 6. Send the config
+## 6. Put the config in the game
 
-Paste the `firebaseConfig` object from step 2 into the chat. The code will then:
+Paste the values from step 2 into [`js/firebase-config.js`](../js/firebase-config.js) and push. The game then shows **Sign in to save online** in the ⋯ menu.
 
-- add a **Sign in to save online** button to the ⋯ menu (playing without signing in still works),
-- upload the device's castle the first time you sign in,
-- load the castle on any device where you're signed in, with changes syncing live,
-- keep saving to the browser as a backup.
+## If sign-in shows an error
+
+The game's message names the setting to check:
+
+| Message | Fix |
+|---|---|
+| "This website isn't on Firebase's allowed list yet" | Step 4: add the site's domain. |
+| "Google sign-in isn't turned on in Firebase yet" | Step 3: enable Google. |
+| "The online database isn't set up yet" | Step 5: create the Firestore database. |
+| "Online save was refused" | Step 5: publish the rules exactly as shown. |
 
 ## Questions
 

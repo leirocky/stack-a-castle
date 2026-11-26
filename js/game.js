@@ -4,11 +4,11 @@
  * Sections (search for the banner comments):
  *   helpers · procedural textures · geometry helpers · renderer + scene · pieces ·
  *   palette icons · lights · island · world state · sample castle · characters ·
- *   undo + save · saving to the viewer's account · sound · UI · picking · layout · loop · boot
+ *   undo + save · online save (Firebase) · sound · UI · picking · layout · loop · boot
  *
- * Saving: every change is written to this browser's localStorage. When the page runs inside
- * a Claude artifact viewer (window.claude exists), it also saves to the viewer's Claude account.
- * On GitHub Pages that online save is inactive; see docs/PROGRESS.md for the Firebase plan.
+ * Saving: every change is written to this browser's localStorage. After the player signs in
+ * with Google (⋯ menu), it is also saved to Firestore and synced across devices. Firebase
+ * settings are in js/firebase-config.js. See docs/ARCHITECTURE.md for the save format.
  */
 (() => {
   'use strict';
@@ -1200,17 +1200,26 @@
     scheduleCloudSave();
   }
 
-  /* ---------- saving to the viewer's account (db capability) ---------- */
+  /* ---------- online save: Google sign-in + Firestore (Firebase) ---------- */
+  // Settings live in js/firebase-config.js. Without them, or if the Firebase scripts can't load,
+  // the game keeps saving on this device only. Each player's castle is one Firestore document,
+  // castles/{their user id}; the database rules let a signed-in player read and write only their own.
   const saveEl = $('#save');
   const TAB = Math.random().toString(36).slice(2, 10);
-  const cloud = { ref: null, writable: false, seen: false, answered: false, earlyOps: null, bootHadLocal: false, bootAt: 0, timer: 0, waitTimer: 0, inFlight: false, pending: false, retried: false };
+  const ASK_KEY = 'stack-a-castle:ask-on-sign-in';
+  const cloud = {
+    ref: null, unsub: null, user: null, writable: false, seen: false, answered: false, ask: false, hold: false,
+    earlyOps: null, latest: null, resolve: null, bootHadLocal: false, bootAt: 0,
+    timer: 0, waitTimer: 0, inFlight: false, pending: false, retried: false
+  };
   const SAVE_TEXT = {
     loading: ['Connecting…', '', 'Looking for your saved castle. You can keep building.'],
     saving: ['Saving…', '', ''],
-    saved: ['Saved online', 'ok', 'Saved to your Claude account. It opens the same on any device where you are signed in.'],
-    device: ['Saved on this device', '', 'Saved in this browser only.'],
+    saved: ['Saved online', 'ok', 'Saved to your Google account. It opens the same on any device where you sign in.'],
+    device: ['Saved on this device', '', 'Saved in this browser only. Sign in from the ⋯ menu to save online.'],
     slow: ['Can’t reach your save', 'warn', 'Your online save is not answering yet. Your building is kept on this device.'],
     retry: ['Not saved yet', 'warn', 'Saving online failed. It will try again after your next change.'],
+    blocked: ['Online save is off', 'warn', 'The online database refused the save. Your castle is kept on this device.'],
     big: ['Too big to save online', 'warn', 'This castle is too big for an online save. It is kept on this device.'],
     full: ['Online storage full', 'warn', 'Online storage is full. Your castle is kept on this device.']
   };
@@ -1247,14 +1256,23 @@
   function scheduleCloudSave(delay) {
     if (!cloud.ref || !cloud.writable) return;
     cloud.pending = true;
-    if (!cloud.seen) return; // hold until we know what is already saved
+    if (!cloud.seen || cloud.hold) return; // hold until we know what is already saved
     setSave('saving');
     clearTimeout(cloud.timer);
     cloud.timer = setTimeout(flushCloud, delay == null ? 900 : delay);
   }
-  const FATAL = ['invalid_argument', 'revoked', 'not_granted', 'capability_disabled', 'capability_removed', 'transform_error'];
+  // Firestore error codes that retrying won't fix
+  const FATAL = ['permission-denied', 'unauthenticated', 'not-found', 'failed-precondition', 'invalid-argument'];
+  function cloudBlocked(e) {
+    cloud.writable = false;
+    setSave('blocked');
+    const code = e && e.code;
+    toast(code === 'permission-denied' ? 'Online save was refused. Check the Firestore rules in Firebase.'
+      : (code === 'not-found' || code === 'failed-precondition') ? 'The online database isn’t set up yet (Firebase → Firestore).'
+        : 'Online saving stopped. Your castle is kept on this device.');
+  }
   async function flushCloud() {
-    if (cloud.inFlight || !cloud.pending || !cloud.ref || !cloud.writable) return;
+    if (cloud.inFlight || !cloud.pending || !cloud.ref || !cloud.writable || cloud.hold) return;
     const body = encodeCastle();
     cloud.pending = false;
     if (JSON.stringify(body).length > 250000) { setSave('big'); return; }
@@ -1266,8 +1284,8 @@
       if (!cloud.pending) setSave('saved');
     } catch (e) {
       const code = e && e.code;
-      if (code === 'quota_exceeded') setSave('full');
-      else if (FATAL.indexOf(code) !== -1) { cloud.writable = false; setSave('device'); }
+      if (code === 'resource-exhausted') setSave('full');
+      else if (FATAL.indexOf(code) !== -1) cloudBlocked(e);
       else if (!cloud.retried) { cloud.retried = true; cloud.pending = true; retry = true; }
       else { cloud.retried = false; setSave('retry'); }
     } finally {
@@ -1292,64 +1310,171 @@
       else if (a.op === 'addChar') addChar(a.kind, a.x, a.y, a.z);
     }
   }
-  // First answer from the account store. Building is never blocked while we wait:
-  // anything built meanwhile is replayed on top of the saved castle.
+  function useAccountCastle(list, d, ops, undoable) {
+    const before = undoable ? { blocks: serialize(), chars: serializeChars() } : null;
+    applyRemote(list, d);
+    if (before) pushUndo({ op: 'bulk', before });
+    if (ops.length) { replayOps(ops); store.set(AT_KEY, String(Date.now())); saveLocal(); }
+    refreshUI();
+    if (ops.length || cloud.pending) scheduleCloudSave(0); else setSave('saved');
+  }
+  // First answer from the online save. Building is never blocked while we wait;
+  // anything built meanwhile (earlyOps) is replayed on top of the saved castle.
   function firstCloud(d) {
     const ops = cloud.earlyOps || [];
     cloud.earlyOps = null;
     const list = decodeCastle(d);
     if (!list) { scheduleCloudSave(0); return; }
     const charList = Array.isArray(d.chars) ? decodeChars(d) : null;
-    const needUpgrade = !Array.isArray(d.chars) && chars.length > 0;
-    const localNewer = cloud.bootHadLocal && cloud.bootAt > (d.savedAt || 0);
-    if (ops.some((a) => a.op === 'bulk') || (localNewer && !sameAsWorld(list, charList))) { scheduleCloudSave(0); return; }
-    if (!sameAsWorld(list, charList)) {
-      applyRemote(list, d);
-      if (ops.length) { replayOps(ops); refreshUI(); saveLocal(); store.set(AT_KEY, String(Date.now())); }
-    } else if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
-    if (ops.length || cloud.pending || needUpgrade) scheduleCloudSave(0); else setSave('saved');
+    if (sameAsWorld(list, charList)) {
+      if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
+      const needUpgrade = !Array.isArray(d.chars) && chars.length > 0;
+      if (ops.length || cloud.pending || needUpgrade) scheduleCloudSave(0); else setSave('saved');
+      return;
+    }
+    if (ops.some((a) => a.op === 'bulk')) { scheduleCloudSave(0); return; }
+    if (cloud.ask && cloud.bootHadLocal) { askWhichCastle(list, d, ops); return; } // just signed in: let the player choose
+    if (cloud.bootHadLocal && cloud.bootAt > (d.savedAt || 0)) { scheduleCloudSave(0); return; } // this device has newer work
+    useAccountCastle(list, d, ops, false);
   }
+
+  /* account vs device: asked once, right after signing in, when the two castles differ */
+  const conflictEl = $('#conflict');
+  function shortDate(ms) {
+    try { return new Date(ms).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+    catch (e) { return ''; }
+  }
+  function askWhichCastle(list, d, ops) {
+    cloud.hold = true;
+    $('#acct-meta').textContent = list.length + ' blocks' + (d.savedAt ? ' · saved ' + shortDate(d.savedAt) : '');
+    $('#dev-meta').textContent = world.size + ' blocks · on this device';
+    conflictEl.hidden = false;
+    $('#keep-account').focus();
+    cloud.resolve = (choice) => {
+      conflictEl.hidden = true;
+      cloud.hold = false;
+      cloud.resolve = null;
+      if (choice === 'account') {
+        const dd = cloud.latest || d;
+        useAccountCastle(decodeCastle(dd) || list, dd, ops, true);
+        toast('Loaded your account’s castle. Undo brings back the one from this device.');
+      } else {
+        store.set(AT_KEY, String(Date.now()));
+        scheduleCloudSave(0);
+        toast('Saved this device’s castle to your account.');
+      }
+      cloud.latest = null;
+    };
+  }
+  $('#keep-account').addEventListener('click', () => { if (cloud.resolve) cloud.resolve('account'); });
+  $('#keep-device').addEventListener('click', () => { if (cloud.resolve) cloud.resolve('device'); });
+
   function onCloud(snap) {
     const md = snap.metadata || {};
     if (!md.fromCache) { cloud.answered = true; clearTimeout(cloud.waitTimer); }
-    if (md.hasPendingWrites) return;
+    if (md.hasPendingWrites) return; // our own write, not confirmed yet
     if (!snap.exists) {
-      if (md.fromCache || cloud.seen) return; // wait for the store's real answer
+      if (md.fromCache || cloud.seen) return; // wait for the server's real answer
       cloud.seen = true; cloud.earlyOps = null;
-      scheduleCloudSave(0); // first save for this account: keep what is here
+      scheduleCloudSave(0); // first save for this account: keep what is on this device
       return;
     }
     const d = snap.data() || {};
     if (!cloud.seen) { cloud.seen = true; firstCloud(d); return; }
+    if (cloud.hold) { cloud.latest = d; return; }
     if (d.writer === TAB) { if (!cloud.pending && !cloud.inFlight) setSave('saved'); return; }
     if (cloud.pending || cloud.inFlight) return; // this device's newer edits will win
     const list = decodeCastle(d);
     if (!list) return;
-    if (!sameAsWorld(list, Array.isArray(d.chars) ? decodeChars(d) : null)) applyRemote(list, d);
+    if (!sameAsWorld(list, Array.isArray(d.chars) ? decodeChars(d) : null)) applyRemote(list, d); // live update from another device
     else if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
     setSave('saved');
   }
-  async function initCloud() {
-    const api = window.claude && typeof window.claude.use === 'function' ? window.claude : null;
-    if (!api) { setSave('device'); return; }
+
+  let fb = null;        // { auth, db } once Firebase is set up
+  let askNext = false;  // the next sign-in came from the player tapping "Sign in"
+  function disconnectCloud() {
+    if (cloud.unsub) { try { cloud.unsub(); } catch (e) { /* already closed */ } }
+    clearTimeout(cloud.timer);
+    clearTimeout(cloud.waitTimer);
+    conflictEl.hidden = true;
+    Object.assign(cloud, {
+      ref: null, unsub: null, user: null, writable: false, seen: false, answered: false, ask: false, hold: false,
+      earlyOps: null, latest: null, resolve: null, inFlight: false, pending: false, retried: false
+    });
+  }
+  function connectCloud(user, ask) {
+    disconnectCloud();
+    cloud.user = user;
+    cloud.ask = ask;
     cloud.earlyOps = [];
+    cloud.bootAt = Number(store.get(AT_KEY) || 0);
+    cloud.bootHadLocal = cloud.bootAt > 0; // this device has edits of its own
     setSave('loading');
-    cloud.waitTimer = setTimeout(() => { if (!cloud.answered) setSave(cloud.ref ? 'slow' : 'device'); }, 10000);
-    let db = null, user = null, uid = null;
+    cloud.waitTimer = setTimeout(() => { if (!cloud.answered) setSave('slow'); }, 10000);
     try {
-      [db, user] = await Promise.all([api.use('db'), api.use('user')]);
-      uid = user ? await user.id() : null;
-    } catch (e) { db = null; }
-    if (!db || !uid) { clearTimeout(cloud.waitTimer); cloud.earlyOps = null; setSave('device'); return; }
-    try {
-      cloud.ref = db.doc('data/users/' + uid + '/castle');
+      cloud.ref = fb.db.collection('castles').doc(user.uid);
       cloud.writable = true;
-      cloud.ref.onSnapshot(onCloud, (e) => {
+      cloud.unsub = cloud.ref.onSnapshot(onCloud, (e) => {
         clearTimeout(cloud.waitTimer);
-        if (e && FATAL.indexOf(e.code) !== -1) { cloud.writable = false; setSave('device'); }
+        if (e && FATAL.indexOf(e.code) !== -1) cloudBlocked(e);
         else if (!cloud.answered) setSave('slow');
       });
-    } catch (e) { clearTimeout(cloud.waitTimer); cloud.ref = null; cloud.earlyOps = null; setSave('device'); }
+    } catch (e) { cloudBlocked(e); }
+  }
+
+  const accountBtn = $('#m-account');
+  function showAccount(user) {
+    $('#account-label').textContent = user ? 'Sign out' : 'Sign in to save online';
+    $('#account-state').textContent = user ? ((user.displayName || '').split(' ')[0] || user.email || '') : '';
+  }
+  function signInError(e) {
+    const code = (e && e.code) || '';
+    if (!code || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
+    if (code === 'auth/unauthorized-domain') toast('This website isn’t on Firebase’s allowed list yet (Authentication → Settings → Authorized domains).');
+    else if (code === 'auth/operation-not-allowed' || code === 'auth/configuration-not-found') toast('Google sign-in isn’t turned on in Firebase yet (Authentication → Sign-in method).');
+    else if (code === 'auth/network-request-failed') toast('No internet connection. Try again when you’re online.');
+    else toast('Sign-in didn’t work. Please try again.');
+  }
+  async function signIn() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    askNext = true;
+    try {
+      await fb.auth.signInWithPopup(provider);
+    } catch (e) {
+      if (e && (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment')) {
+        try { sessionStorage.setItem(ASK_KEY, '1'); } catch (err) { /* ignore */ }
+        fb.auth.signInWithRedirect(provider).catch(signInError);
+        return;
+      }
+      askNext = false;
+      signInError(e);
+    }
+  }
+  accountBtn.addEventListener('click', () => {
+    openMenu(false);
+    if (!fb) return;
+    if (fb.auth.currentUser) fb.auth.signOut().then(() => toast('Signed out. Your castle stays on this device.')).catch(() => {});
+    else signIn();
+  });
+  function initOnline() {
+    const cfg = window.STACK_A_CASTLE_FIREBASE;
+    if (!window.firebase || !cfg || !cfg.apiKey) { accountBtn.hidden = true; setSave('device'); return; }
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(cfg);
+      fb = { auth: firebase.auth(), db: firebase.firestore() };
+    } catch (e) { fb = null; accountBtn.hidden = true; setSave('device'); return; }
+    try { askNext = sessionStorage.getItem(ASK_KEY) === '1'; sessionStorage.removeItem(ASK_KEY); } catch (e) { /* ignore */ }
+    fb.auth.getRedirectResult().catch(signInError);
+    showAccount(null);
+    setSave('device');
+    fb.auth.onAuthStateChanged((user) => {
+      showAccount(user);
+      if (user) { if (!cloud.user || cloud.user.uid !== user.uid) connectCloud(user, askNext); }
+      else { disconnectCloud(); setSave('device'); }
+      askNext = false;
+    });
   }
   function pushUndo(a) {
     undoStack.push(a);
@@ -1589,6 +1714,7 @@
 
   /* keyboard */
   window.addEventListener('keydown', (e) => {
+    if (!conflictEl.hidden) return;
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -1814,10 +1940,9 @@
     data = data || {};
     let blocks = validList(data.blocks) ? data.blocks : null;
     let charList = validChars(data.chars) ? data.chars : null;
-    if (blocks) cloud.bootHadLocal = true;
     if (!blocks) {
       const raw = store.get(SAVE_KEY);
-      if (raw) { try { const parsed = JSON.parse(raw); if (validList(parsed)) { blocks = parsed; cloud.bootHadLocal = true; } } catch (e) { /* ignore */ } }
+      if (raw) { try { const parsed = JSON.parse(raw); if (validList(parsed)) blocks = parsed; } catch (e) { /* ignore */ } }
     }
     if (!blocks) blocks = sampleCastle();
     loadBlocks(blocks, false);
@@ -1828,21 +1953,14 @@
     if (!charList) { charList = starterChars(); }
     loadChars(charList);
     if (!store.get(CHARS_KEY)) store.set(CHARS_KEY, JSON.stringify(serializeChars()));
-    cloud.bootAt = Number(store.get(AT_KEY) || 0);
     applyNight(0);
     const nightOn = typeof data.night === 'boolean' ? data.night : store.get(NIGHT_KEY) === '1';
     if (nightOn) setNight(true, true);
     layout();
     resetView();
     refreshUI();
-    initCloud();
+    initOnline();
     requestAnimationFrame(frame);
   }
-  try {
-    const hot = window.claude && window.claude.hot;
-    if (hot && typeof hot.snapshot === 'function') hot.snapshot(() => ({ blocks: serialize(), chars: serializeChars(), night: nightTarget === 1 }));
-  } catch (e) { /* no hot reload */ }
-  const hot = window.claude && window.claude.hot;
-  if (hot && typeof hot.ready === 'function') hot.ready(start);
-  else start((hot && hot.data) || {});
+  start({});
 })();

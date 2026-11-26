@@ -37,13 +37,24 @@ After every change, `changed()` runs. It:
 1. Writes the castle to `localStorage` (keys starting with `stack-a-castle:`).
 2. Asks the online save, if one is active, to write in about a second.
 
-Online saving currently exists only for the Claude artifact viewer (it uses `window.claude`). On GitHub Pages it stays off, and the status line reads "Saved on this device". Firebase will replace it; see [PROGRESS.md](PROGRESS.md).
+### Online saving (Firebase)
 
-When an online save connects, the game compares it with what's on the device:
+- Settings are in `js/firebase-config.js`. If that file is missing or the Firebase scripts can't load, the sign-in item is hidden and the game saves on the device only.
+- Sign-in is Google only, through a popup, with a full-page redirect if the popup is blocked. Firebase keeps the player signed in between visits.
+- Each player's castle is one Firestore document, `castles/{uid}`, in the save format below. The security rules allow a signed-in player to read and write only their own document.
+- The game listens to that document, so a change made on one device appears on the others within a second or two. Its own writes are recognized by a per-tab id (`writer`) and ignored.
+- Saves are batched: about one second after the last change. A failed save is retried once. Errors that retrying won't fix (refused by rules, database missing) turn online saving off for that visit and show a message.
 
-- No online save yet: upload this device's castle.
-- Online save is newer: load it, then replay anything built in the last few seconds while connecting.
-- This device has newer unsaved work: upload it.
+When the online save first answers, the game compares it with the castle on screen:
+
+| Situation | What happens |
+|---|---|
+| No online castle yet | This device's castle is uploaded. |
+| Same castle | Nothing to do. |
+| Different, and the player **just tapped Sign in** while this device has its own edits | A dialog asks which castle to keep. Picking the account's castle is undoable. |
+| Different, on a returning visit | Whichever was changed more recently wins (device edit time vs. `savedAt`). |
+
+Anything built during the second or two of connecting is replayed on top of whichever castle is kept.
 
 ## Save format (version 3)
 
