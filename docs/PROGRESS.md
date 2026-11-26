@@ -1,12 +1,12 @@
 # Project progress
 
-_Last updated: 26 Nov 2026 (online saving added)_
+_Last updated: 26 Nov 2026 · Current version: **v1.0.0**_
 
 ## Where things stand
 
-The game is complete, playable and hosted on GitHub Pages. Saving works on the device, through file backups, and online with Google sign-in (Firebase). **Next: a first real sign-in on the live site to confirm the Firebase setup end to end.**
+**v1.0.0 is released** (26 Nov 2026): the game is complete, playable and hosted on GitHub Pages. Saving works on the device, through file backups, and online with Google sign-in (Firebase). **Working toward v1.1, "Smooth and solid"** (see [ROADMAP.md](ROADMAP.md)). Its first item is a real sign-in on two devices to confirm online saving end to end.
 
-## Done
+## History (v1.0 development)
 
 | Date | What changed |
 |---|---|
@@ -20,19 +20,14 @@ The game is complete, playable and hosted on GitHub Pages. Saving works on the d
 | 26 Nov 2026 | **Online saving:** optional Google sign-in in the ⋯ menu; castles stored in Firestore and synced live across devices. If the account and the device have different castles at sign-in, the player picks which to keep, and Undo can switch back. The Claude-only save code was removed. Tested with a simulated Firebase: first sign-in, both choices, returning visits, sign-out, and refused saves. |
 | 26 Nov 2026 | Version numbers (`?v=`) on the CSS and JS links, so browsers load new code right after a deploy instead of a cached copy. |
 
-## Next up
+## Next up (v1.1)
 
 1. **Confirm online saving on the live site.** Sign in on one device, build something, then sign in on a second device and check the castle appears. If sign-in shows an error, the message names the Firebase setting to check.
-2. Pick the next feature from the ideas below.
+2. **Faster drawing for big castles** (instancing).
+3. **Fix see-through glitches** with stacked glass and ice.
+4. **"How to play" card**, **screenshot button**, and an **offline message**.
 
-## Ideas for later
-
-- More characters (horse, dog, ghost for night mode), and characters that follow paths.
-- A "dragon attack" challenge that knocks down weak walls.
-- Resources and costs (collect stone and gold to build), turning it into a light strategy game.
-- Screenshot button.
-- Multiple saved castles to switch between.
-- Building together with someone else in real time.
+The full list, and the milestones after it (v1.2 livelier island, v1.3 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
 
 ## Known issues and limits
 

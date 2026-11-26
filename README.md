@@ -4,6 +4,8 @@ A 3D castle builder that runs in any web browser, on phones and computers. Stack
 
 **Play it:** https://leirocky.github.io/stack-a-castle/
 
+**Version 1.0.0** (26 Nov 2026) · [What's new](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
+
 ![The sample castle: stone walls with battlements, four round towers with red roofs, a brick keep with a flag, a moat, and a dragon flying overhead](docs/screenshot.jpg)
 
 ## How to play
@@ -55,7 +57,7 @@ Then open http://localhost:8000. (Opening `index.html` directly also works in mo
 
 The site is served by **GitHub Pages** from the `main` branch, root folder. Pushing to `main` updates the live site within about a minute.
 
-When you change `css/style.css`, `js/game.js` or `js/firebase-config.js`, **raise the `?v=` number** on its link in `index.html` (for example `?v=3` to `?v=4`). Browsers keep old copies of these files for up to 10 minutes; the new number makes them load the new version right away.
+When you change `css/style.css`, `js/game.js` or `js/firebase-config.js`, **raise the `?v=` number** on the links in `index.html`. Browsers keep old copies of these files for up to 10 minutes; the new number makes them load the new version right away. The number matches the game's version, which also appears at the bottom of the ⋯ menu. The full release steps are in [docs/ROADMAP.md](docs/ROADMAP.md#releasing-a-version).
 
 ## Project layout
 
@@ -64,7 +66,9 @@ index.html            Page markup: the 3D stage, top bar, menu, and the tool doc
 css/style.css         All styles (colors are tokens at the top)
 js/game.js            The whole game: textures, pieces, characters, controls, saving
 js/firebase-config.js Firebase project settings (public values) for online saving
+CHANGELOG.md          What changed in each version
 docs/PROGRESS.md      Current status, what's done, what's next, known issues
+docs/ROADMAP.md       Future milestones (v1.1 → v3.0) and how to release a version
 docs/ARCHITECTURE.md  How the code works and the save-file format
 docs/FIREBASE_SETUP.md  How online saving is set up in Firebase
 .nojekyll             Tells GitHub Pages to serve files as-is
@@ -74,4 +78,6 @@ The game uses [Three.js](https://threejs.org/) r128 from the jsDelivr CDN, [Fire
 
 ## Status
 
-See **[docs/PROGRESS.md](docs/PROGRESS.md)** for what's done, what's in progress and what's planned.
+- **[docs/PROGRESS.md](docs/PROGRESS.md):** where things stand right now, known issues and decisions
+- **[docs/ROADMAP.md](docs/ROADMAP.md):** future milestones, from v1.1 (smooth and solid) to v3.0 (build together)
+- **[CHANGELOG.md](CHANGELOG.md):** what's in each released version
