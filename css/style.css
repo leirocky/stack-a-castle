@@ -276,6 +276,7 @@ html.is-night .sky-night { opacity: 1; }
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
+.tile.big { width: 82px; } /* landmarks have longer names */
 .tile[aria-pressed="true"] { background: var(--gold-wash); box-shadow: inset 0 0 0 3px var(--gold); }
 .is-erasing .tile { opacity: 0.5; }
 .is-erasing .tile[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--line); background: rgba(27, 35, 71, 0.045); }

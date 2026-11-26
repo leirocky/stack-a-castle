@@ -1,12 +1,19 @@
 # Project progress
 
-_Last updated: 26 Nov 2026 · Current version: **v1.1.0**_
+_Last updated: 26 Nov 2026 · Current version: **v1.2.0**_
 
 ## Where things stand
 
-**v1.1.0 is built** (26 Nov 2026): every v1.1 "Smooth and solid" item is done, plus a new **Furniture** tab. It goes live when the pull request is merged into `main`; then create the GitHub release (steps in [ROADMAP.md](ROADMAP.md#releasing-a-version)). Two checks need real devices (see **Next up**). After that, work moves to **v1.2, "A livelier island"**.
+**v1.2.0 is built** (26 Nov 2026): a new **Landmarks** tab with 9 famous places, plus three new blocks. It goes live when its pull request is merged into `main`. **v1.1.0** ("Smooth and solid", plus furniture) is live; two checks on real devices are still open (see **Next up**). Next comes **v1.3, "A livelier island"**. (Landmarks became v1.2, so the later milestones each moved down one number.)
 
 v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file backups, and online with Google sign-in (Firebase), confirmed with a real Google sign-in on the live site.
+
+## History (v1.2)
+
+| Date | What changed |
+|---|---|
+| 26 Nov 2026 | **Landmarks tab:** the Great Pyramid, Eiffel Tower, Big Ben, Statue of Liberty, Leaning Tower of Pisa, Colosseum, Stonehenge, Great Wall and Moai, each built from ordinary blocks. Tap to place (it faces you); an outline shows the space first on a computer; one Undo removes it; a message says where it is in the world. New blocks: Iron, Clock (glows at night) and Teal. |
+| 26 Nov 2026 | Tested in a headless browser: every landmark placed and photographed, placing by click, the outline, Undo, reload, the "no room" message near the edge, turning to face the camera, and the earlier checks (glass and ice, furniture, online saving against a simulated Firebase). No console errors. |
 
 ## History (v1.1)
 
@@ -34,16 +41,17 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 
 ## Next up
 
-1. **Merge and release v1.1.0**, then reload the game on every family device (see the first known issue).
+1. **Merge v1.2.0**, then reload the game on every family device (see the first known issue). Create GitHub releases for v1.1.0 and v1.2.0.
 2. **Check on the oldest tablet:** open a big castle (about 2,000 blocks, 20 characters) and see that spinning and building feel smooth. This finishes v1.1's "done when".
 3. **Check live sync:** sign in on two devices, build on one, and watch the other update.
-4. Then **v1.2, "A livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
+4. Then **v1.3, "A livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
 
-The full list, and the milestones after it (v1.3 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
+The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
 
 ## Known issues and limits
 
-- **After an update, reload the game on every device.** A copy of v1.0 left open in a tab can't read castles that contain furniture, and its next save online could overwrite them. Reloading the page fixes it. (From v1.1 on, the game spots saves from a newer version and stops instead.)
+- **After an update, reload the game on every device.** A copy of v1.0 left open in a tab can't read castles with furniture or the new blocks, and its next save online could overwrite them. Reloading the page fixes it. (From v1.1 on, the game spots saves from a newer version, says "Update needed" and stops saving instead.)
+- **Landmarks need open space.** A landmark is only placed if all of it fits on the island; squares that already have a block are skipped, so it builds around what's there. Placing one on a tall building can push it over the height limit.
 - **Pieces placed on a rug or slab** sit a full block up, like in other block-building games. Candles, flowers and rugs are the exception: they sit down onto low furniture.
 - **Without signing in, saves live in one browser on one device.** Clearing site data deletes them. Sign in, or use **Save to a file**.
 - **Two devices editing at once:** the last save wins. Edits made on both devices within the same second or two can overwrite each other.
@@ -70,3 +78,5 @@ The full list, and the milestones after it (v1.3 many castles, v2.0 quests, v3.0
 | One sorted mesh for glass and ice | Sorting faces is the reliable way to draw see-through blocks in the right order. There are few glass and ice blocks, so re-sorting when the camera moves is cheap. |
 | Furniture fits in one square | Keeps the grid, saving and undo simple. A one-square bed is just the right size for the characters. |
 | No save-format change for furniture | Pieces are saved by name, so new pieces need no new version. Older saves load as before. |
+| Landmarks are built from ordinary blocks | Kids can change any part, Undo works, and saving needs no change. A single big model would look smoother but couldn't be edited. |
+| Landmarks of real places, made blocky | Famous buildings are fine to show; they are simple block versions, not copies of anyone's artwork. |

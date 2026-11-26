@@ -2,6 +2,22 @@
 
 All notable changes, newest first. Planned work is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## v1.2.0 — 26 Nov 2026
+
+Landmarks.
+
+**New: Landmarks**
+- A new **Landmarks** tab with 9 famous places from around the world: the Great Pyramid, the Eiffel Tower, Big Ben, the Statue of Liberty, the Leaning Tower of Pisa, the Colosseum, Stonehenge, the Great Wall and the Moai.
+- Pick one and tap the grass: the whole landmark pops up out of ordinary blocks, turned to face you, with a little fanfare. A short message says where it is in the world.
+- On a computer, an outline shows the space it will fill (red if there isn't room).
+- Landmarks are made of normal blocks, so kids can change or erase any part. One Undo takes the whole landmark away.
+- Some have surprises: the pyramid has a doorway and treasure inside, and characters can walk into the Colosseum through its arches.
+
+**New blocks** (Build tab)
+- **Iron**: see-through iron girders (the Eiffel Tower is made of them).
+- **Clock**: a clock face that glows at night (on Big Ben).
+- **Teal**: a green-blue color (the Statue of Liberty).
+
 ## v1.1.0 — 26 Nov 2026
 
 "Smooth and solid", plus furniture.

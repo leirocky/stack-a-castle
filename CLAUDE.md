@@ -5,7 +5,7 @@ A 3D castle builder played in the browser by a family with young kids. Live at h
 ## Start here
 
 - `docs/PROGRESS.md`: where things stand and what's next. Read it first.
-- `docs/ROADMAP.md`: milestones. Current version is v1.1.0 ("Smooth and solid", plus furniture); work is toward **v1.2 "A livelier island"**.
+- `docs/ROADMAP.md`: milestones. Current version is v1.2.0 (Landmarks); work is toward **v1.3 "A livelier island"**.
 - `docs/ARCHITECTURE.md`: how `js/game.js` is organized, how saving works, and the save format.
 
 ## Ground rules
