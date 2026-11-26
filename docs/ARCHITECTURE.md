@@ -48,6 +48,18 @@ To add a block:
 
 Twelve pieces in the **Furniture** tab: table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench and barrel. All are original designs built from simple shapes, and each fits in one square. Tables placed side by side join into one long table. Candles and the fireplace glow at night.
 
+### Landmarks
+
+The **Landmarks** tab holds famous places (`LANDMARKS`): the Great Pyramid, Eiffel Tower, Big Ben, Statue of Liberty, Leaning Tower of Pisa, Colosseum, Stonehenge, Great Wall and Moai. Each is a recipe (`build(s)`) that lists ordinary blocks around its own center, front facing +z, using small helpers (`put`, `box`, `square`, and `outline` for round or oval floor plans).
+
+- Landmarks are not pieces and are never saved as such. Once placed, a landmark is just blocks, so kids can change it and old copies of the save format still apply.
+- The tray is built from `TILES`: all of `PIECES`, then one tile per landmark. Icons for landmarks are drawn from their blocks (`previewBlocks`).
+- Placing (`placeLandmark`): the landmark turns so its front faces the camera (`facing4`, `turnXZ`, and `turnRot` for pieces inside it that turn). It is placed only if its whole box fits on the island (`landmarkSpot`); squares that already have a block are skipped. Blocks pop in from the bottom up.
+- On a computer the build cursor becomes an outline of the landmark's box, red if it doesn't fit.
+- Three blocks were added for landmarks: `iron` (see-through girders with shadows, like leaves), `clock` (glows at night, like windows) and the `teal` paint.
+
+To add a landmark: add an entry to `LANDMARKS` with an `id` that isn't a piece id, a short `name` for the tile, `called` and `where` for messages, and a `build(s)` recipe. Keep it under the height limit (32) and roughly 30 × 30.
+
 ## Characters
 
 Characters (`chars`) are separate from blocks and are not part of the grid map. Each one stores a cell, a home cell, and a small state machine:
@@ -61,7 +73,7 @@ Characters (`chars`) are separate from blocks and are not part of the grid map. 
 
 ## Undo
 
-Every change pushes an entry onto `undoStack`: `add`, `remove`, `addChar`, `removeChar`, or `bulk` (sample castle, clear, open file). A `bulk` entry stores the whole previous castle.
+Every change pushes an entry onto `undoStack`: `add`, `remove`, `addChar`, `removeChar`, `many` (a landmark: the list of blocks it added), or `bulk` (sample castle, clear, open file). A `bulk` entry stores the whole previous castle.
 
 ## Saving
 
@@ -113,4 +125,4 @@ Used for online saves and for **Save to a file**:
 - `chars` is a flat list of 4 numbers per character: `kind index into charKinds, x, y, z`. For the dragon, the cell is its home.
 - Pieces are saved by name through the `pieces` list, so reordering or adding pieces never breaks old saves.
 - Files without `chars` (version 2) load fine; the device keeps its own characters.
-- Version 1.1 added the furniture pieces without changing the format: new pieces just add names to `pieces`.
+- Versions 1.1 and 1.2 added furniture and three blocks (iron, clock, teal) without changing the format: new pieces just add names to `pieces`. Landmarks are saved as their blocks.

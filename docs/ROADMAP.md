@@ -1,6 +1,6 @@
 # Roadmap
 
-_Current version: **v1.1.0** (26 Nov 2026). Last updated: 26 Nov 2026._
+_Current version: **v1.2.0** (26 Nov 2026). Last updated: 26 Nov 2026._
 
 This lists planned milestones in order. Each one has a goal, what's in it, and how we'll know it's done. Sizes are rough: **S** is an evening, **M** a few sessions, **L** a week or more of sessions. Plans can change; when they do, update this file and [PROGRESS.md](PROGRESS.md).
 
@@ -8,8 +8,9 @@ This lists planned milestones in order. Each one has a goal, what's in it, and h
 |---|---|---|
 | [v1.0](#v10--the-castle-builder-released) | The castle builder | ✅ Released 26 Nov 2026 |
 | [v1.1](#v11--smooth-and-solid) | Smooth and solid (plus furniture) | ✅ Built 26 Nov 2026 · two checks on real devices left |
-| [v1.2](#v12--a-livelier-island) | A livelier island | 🔜 Next |
-| [v1.3](#v13--many-castles) | Many castles | Planned |
+| [v1.2](#v12--landmarks-released) | Landmarks | ✅ Built 26 Nov 2026 |
+| [v1.3](#v13--a-livelier-island) | A livelier island | 🔜 Next |
+| [v1.4](#v14--many-castles) | Many castles | Planned |
 | [v2.0](#v20--quests-and-challenges) | Quests and challenges | Planned |
 | [v3.0](#v30--build-together) | Build together | Idea |
 
@@ -41,7 +42,19 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 
 **Done when:** a 2,000-block castle with 20 characters runs smoothly on the oldest tablet in the house, and online saves work across two devices. _Both still need a check on real devices (see [PROGRESS.md](PROGRESS.md))._
 
-## v1.2 — A livelier island
+## v1.2 — Landmarks (released)
+
+**Goal:** famous places from around the world to build with, added at the family's request. (The milestones after this one each moved down one number.)
+
+| Item | Size |
+|---|---|
+| ✅ A **Landmarks** tab with 9 famous places built from ordinary blocks: the Great Pyramid, Eiffel Tower, Big Ben, Statue of Liberty, Leaning Tower of Pisa, Colosseum, Stonehenge, Great Wall and the Moai | M |
+| ✅ Placing one shows its outline first, turns it to face you, and Undo takes the whole thing away | S |
+| ✅ Three new blocks the landmarks need: Iron (see-through girders), Clock (glows at night) and Teal | S |
+
+**Done when:** each landmark can be placed, changed block by block, undone in one step, and saved like any castle.
+
+## v1.3 — A livelier island
 
 **Goal:** more to build and more going on around the castle.
 
@@ -55,7 +68,7 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 
 **Done when:** the new pieces and characters are in their tabs, characters visibly use paths and benches, and weather and the cycle can be switched on and off.
 
-## v1.3 — Many castles
+## v1.4 — Many castles
 
 **Goal:** keep several castles and pick which one to play.
 

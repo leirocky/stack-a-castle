@@ -4,7 +4,7 @@ A 3D castle builder that runs in any web browser, on phones and computers. Stack
 
 **Play it:** https://leirocky.github.io/stack-a-castle/
 
-**Version 1.1.0** (26 Nov 2026) · [What's new](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
+**Version 1.2.0** (26 Nov 2026) · [What's new](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
 
 ![The sample castle: stone walls with battlements, four round towers with red roofs, a brick keep with a flag, a moat, and a dragon flying overhead](docs/screenshot.jpg)
 
@@ -16,6 +16,7 @@ A 3D castle builder that runs in any web browser, on phones and computers. Stack
 | Zoom | Pinch | Scroll wheel |
 | Move around the island | Drag with two fingers | Drag with the right mouse button |
 | Place a piece | Pick it in the tray, then tap the ground or the side of a block | Same, with a click |
+| Place a landmark | Pick it in the **Landmarks** tab, then tap an open patch of grass | Same, with a click (an outline shows where it will go) |
 | Remove a piece | Switch to **Erase**, then tap it | Right-click it (or press **E** for Erase) |
 | Undo | Undo button (top right) | Undo button or **Ctrl/Cmd + Z** |
 | Day / night | Moon button | Moon button or **N** |
@@ -27,12 +28,13 @@ A **How to play** card appears on the first visit. More options are in the **⋯
 
 - **Castle (10):** stone, brick, window, gate, battlement, round tower, roof, flag, torch, gold
 - **Nature (11):** grass, dirt, sand, cobblestone, water, tree, log, leaves, snow, ice, lava
-- **Build (14):** wood, glass, slab, stairs, fence, door, lamp, lantern, and six colors
+- **Build (17):** wood, glass, slab, stairs, fence, door, lamp, lantern, seven colors, iron and clock
 - **Furniture (12):** table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench, barrel
+- **Landmarks (9):** the Great Pyramid, Eiffel Tower, Big Ben, Statue of Liberty, Leaning Tower of Pisa, Colosseum, Stonehenge, Great Wall and Moai. Tap the grass and the whole landmark pops up out of ordinary blocks, facing you. You can change any part of it, and one Undo takes it away.
 - **Characters (6):** knight, queen, sheep, chicken, cat, dragon. They wander, walk through gates and doors, walk around furniture and over rugs, climb one block at a time, and avoid water and lava. The dragon circles in the sky. Tap a character to make it jump and make its sound.
 - A 100 × 100 island, blocks up to 32 high, up to 40 characters. Big castles (thousands of blocks) stay smooth.
 - Gates, doors, fences, stairs and furniture turn to face you when placed. Candles, flowers and rugs sit down onto tables and other low furniture.
-- At night, windows, lamps, lanterns, torches, candles, fireplaces and lava glow.
+- At night, windows, clocks, lamps, lanterns, torches, candles, fireplaces and lava glow.
 - **Save a picture** of your castle from the ⋯ menu.
 
 All textures, models and sounds are generated in code; the game has no image or audio files. The characters are original designs.
@@ -71,7 +73,7 @@ js/firebase-config.js Firebase project settings (public values) for online savin
 CHANGELOG.md          What changed in each version
 CLAUDE.md             Project rules and context for Claude Code
 docs/PROGRESS.md      Current status, what's done, what's next, known issues
-docs/ROADMAP.md       Future milestones (v1.1 → v3.0) and how to release a version
+docs/ROADMAP.md       Milestones (v1.0 → v3.0) and how to release a version
 docs/ARCHITECTURE.md  How the code works and the save-file format
 docs/FIREBASE_SETUP.md  How online saving is set up in Firebase
 .nojekyll             Tells GitHub Pages to serve files as-is
@@ -82,5 +84,5 @@ The game uses [Three.js](https://threejs.org/) r128 from the jsDelivr CDN, [Fire
 ## Status
 
 - **[docs/PROGRESS.md](docs/PROGRESS.md):** where things stand right now, known issues and decisions
-- **[docs/ROADMAP.md](docs/ROADMAP.md):** future milestones, from v1.2 (a livelier island) to v3.0 (build together)
+- **[docs/ROADMAP.md](docs/ROADMAP.md):** future milestones, from v1.3 (a livelier island) to v3.0 (build together)
 - **[CHANGELOG.md](CHANGELOG.md):** what's in each released version

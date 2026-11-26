@@ -398,6 +398,35 @@
     for (let x = 3; x < S; x += 6) { g.fillRect(x, 0, 2, 6); g.fillRect(x, S - 6, 2, 6); }
     return c;
   }
+  function latticeCanvas() { // iron girders with see-through gaps (alpha), for the Eiffel Tower
+    const S = 64, c = cv(S, S), g = c.getContext('2d');
+    g.strokeStyle = '#6e5846'; g.lineCap = 'square';
+    g.lineWidth = 7; g.strokeRect(3.5, 3.5, S - 7, S - 7);
+    g.lineWidth = 4; g.beginPath(); g.moveTo(5, 5); g.lineTo(S - 5, S - 5); g.moveTo(S - 5, 5); g.lineTo(5, S - 5); g.stroke();
+    g.lineWidth = 3; g.beginPath(); g.moveTo(S / 2, 5); g.lineTo(S / 2, S - 5); g.stroke();
+    g.strokeStyle = 'rgba(255,230,200,0.28)'; g.lineWidth = 1.5; g.strokeRect(1.5, 1.5, S - 3, S - 3);
+    g.fillStyle = '#4a3a2e';
+    for (const [x, y] of [[6, 6], [S - 6, 6], [6, S - 6], [S - 6, S - 6], [S / 2, S / 2]]) { g.beginPath(); g.arc(x, y, 2, 0, Math.PI * 2); g.fill(); }
+    return c;
+  }
+  function clockCanvases() { // a clock face (and its glow mask for night), for Big Ben
+    const S = 128, c = cv(S, S), g = c.getContext('2d'), e = cv(S, S), h = e.getContext('2d');
+    g.fillStyle = '#3b3328'; g.fillRect(0, 0, S, S);
+    g.fillStyle = '#d9a63a'; g.beginPath(); g.arc(64, 64, 58, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#f7f1df'; g.beginPath(); g.arc(64, 64, 50, 0, Math.PI * 2); g.fill();
+    h.fillStyle = '#000'; h.fillRect(0, 0, S, S);
+    h.fillStyle = '#fff2c2'; h.beginPath(); h.arc(64, 64, 50, 0, Math.PI * 2); h.fill();
+    for (const ctx of [g, h]) {
+      ctx.save(); ctx.translate(64, 64); ctx.fillStyle = '#1f1d22';
+      for (let i = 0; i < 12; i++) { ctx.save(); ctx.rotate(i * Math.PI / 6); const big = i % 3 === 0; ctx.fillRect(big ? -3 : -1.5, -46, big ? 6 : 3, big ? 12 : 8); ctx.restore(); }
+      ctx.lineCap = 'round'; ctx.strokeStyle = '#1f1d22';
+      ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(-2.6) * 26, Math.sin(-2.6) * 26); ctx.stroke(); // hour hand at ten
+      ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(-0.52) * 38, Math.sin(-0.52) * 38); ctx.stroke(); // minute hand at two
+      ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    return [c, e];
+  }
   // Glass and ice side by side in one texture, so both can be drawn as one sorted mesh.
   function clearCanvas() {
     const c = cv(128, 64), g = c.getContext('2d');
@@ -559,7 +588,7 @@
   M.lava = std({ map: T.lava, emissive: new THREE.Color('#ffffff'), emissiveMap: T.lava, emissiveIntensity: 0.85, roughness: 0.6 });
   M.lamp = std({ map: T.lamp, emissive: new THREE.Color('#ffc34d'), emissiveMap: T.lamp, emissiveIntensity: 0.5 });
   M.lanternCore = new THREE.MeshBasicMaterial({ color: '#ffd77a' });
-  const PAINT = { red: '#d6453b', blue: '#3a6fd8', yellow: '#f2c230', green: '#4caf50', white: '#f4f4f2', black: '#2b2d35' };
+  const PAINT = { red: '#d6453b', blue: '#3a6fd8', yellow: '#f2c230', green: '#4caf50', teal: '#5fae9b', white: '#f4f4f2', black: '#2b2d35' };
   for (const k in PAINT) M['paint_' + k] = std({ map: T.paint, color: new THREE.Color(PAINT[k]), roughness: 0.8 });
 
   /* furniture */
@@ -588,6 +617,14 @@
   M.bookshelfFaces = [M.wood, M.wood, M.wood, M.wood, M.books, M.books];
   M.rugFaces = [M.rugEdge, M.rugEdge, M.rug, M.rugEdge, M.rugEdge, M.rugEdge];
   M.barrelFaces = [M.wood, M.rings, M.rings];
+
+  /* blocks for landmarks */
+  const [clockC, clockE] = clockCanvases();
+  T.lattice = tex(latticeCanvas()); T.clock = tex(clockC); T.clockE = tex(clockE);
+  M.lattice = std({ map: T.lattice, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.55, metalness: 0.3 });
+  M.latticeDepth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: T.lattice, alphaTest: 0.5 });
+  M.clock = std({ map: T.clock, emissive: new THREE.Color('#ffe9a8'), emissiveMap: T.clockE, emissiveIntensity: 0, roughness: 0.6 });
+  M.clockFaces = [M.clock, M.clock, M.gold, M.gold, M.clock, M.clock];
 
   const G = {
     box: new THREE.BoxGeometry(1, 1, 1),
@@ -723,8 +760,11 @@
     { id: 'blue', name: 'Blue', swatch: '#3a6fd8', cat: 'build' },
     { id: 'yellow', name: 'Yellow', swatch: '#f2c230', cat: 'build' },
     { id: 'green', name: 'Green', swatch: '#4caf50', cat: 'build' },
+    { id: 'teal', name: 'Teal', swatch: '#5fae9b', cat: 'build' },
     { id: 'white', name: 'White', swatch: '#f4f4f2', cat: 'build' },
     { id: 'black', name: 'Black', swatch: '#2b2d35', cat: 'build' },
+    { id: 'iron', name: 'Iron', swatch: '#6e5846', cat: 'build' },
+    { id: 'clock', name: 'Clock', swatch: '#f7f1df', cat: 'build' },
     { id: 'table', name: 'Table', swatch: '#ad7742', cat: 'furniture' },
     { id: 'chair', name: 'Chair', swatch: '#ad7742', cat: 'furniture' },
     { id: 'bed', name: 'Bed', swatch: '#3a6fd8', cat: 'furniture' },
@@ -832,6 +872,8 @@
       case 'bed': o = new THREE.Group(); o.add(mk(G.bedFrame, M.wood), mk(G.bedLinen, M.linen), mk(G.blanket, M.blanket)); break;
       case 'throne': o = new THREE.Group(); o.add(mk(G.throne, M.trim), mk(G.throneCushion, M.velvet), mk(G.gem, M.gem)); break;
       case 'bookshelf': o = mk(G.box, M.bookshelfFaces); break;
+      case 'iron': o = mk(G.box, M.lattice); o.customDepthMaterial = M.latticeDepth; break;
+      case 'clock': o = mk(G.box, M.clockFaces); break;
       case 'chest': o = new THREE.Group(); o.add(mk(G.chestBody, M.wood), mk(G.chestLid, M.wood), mk(G.chestTrim, M.trim), mk(G.keyhole, M.soot, false)); break;
       case 'barrel': o = new THREE.Group(); o.add(mk(G.barrel, M.wood), mk(G.barrelTop, M.barrelFaces), mk(G.hoops, M.iron)); break;
       case 'rug': o = mk(G.rug, M.rugFaces, false); break;
@@ -876,6 +918,26 @@
     chest: { y: -0.18, d: 2.6 }, barrel: { y: -0.1, d: 2.9 }, candles: { y: -0.3, d: 1.5 }, flowers: { y: -0.27, d: 1.5 },
     rug: { y: -0.45, d: 2.9 }, bench: { y: -0.2, d: 2.9 }
   };
+  function previewBlocks(list) { // a list of blocks as one InstancedMesh per piece part (for icons)
+    const g = new THREE.Group(), byId = new Map(), m4 = new THREE.Matrix4(), m5 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
+    for (const e of list) { if (!byId.has(e[3])) byId.set(e[3], []); byId.get(e[3]).push(e); }
+    for (const [id, cells] of byId) {
+      const tpl = makePiece(id, 0);
+      tpl.updateMatrixWorld(true);
+      tpl.traverse((m) => {
+        if (!m.isMesh) return;
+        const im = new THREE.InstancedMesh(m.geometry, m.material, cells.length);
+        cells.forEach((e, i) => {
+          q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), pieceYaw(id, e[4]));
+          m4.compose(v.set(e[0] + 0.5, e[1] + 0.5, e[2] + 0.5), q, one);
+          im.setMatrixAt(i, m5.multiplyMatrices(m4, m.matrixWorld));
+        });
+        im.frustumCulled = false;
+        g.add(im);
+      });
+    }
+    return g;
+  }
   function makeIcons() {
     const icons = {};
     let r2;
@@ -889,12 +951,21 @@
     sc.add(new THREE.AmbientLight(0xffffff, 0.12));
     const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
     const dir = new THREE.Vector3(1, 0.8, 1.25).normalize();
-    for (const p of PIECES) {
-      const obj = makePiece(p.id, 0);
+    for (const p of TILES) {
+      const obj = p.landmark ? previewBlocks(p.landmark.blocks) : makePiece(p.id, 0);
       sc.add(obj);
-      const v = ICON_VIEW[p.id] || { y: 0, d: 3.6 };
-      cam.position.copy(dir).multiplyScalar(v.d); cam.position.y += v.y;
-      cam.lookAt(0, v.y, 0);
+      if (p.landmark) { // frame the whole landmark
+        const l = p.landmark, c = new THREE.Vector3((l.min[0] + l.max[0] + 1) / 2, (l.max[1] + 1) / 2, (l.min[2] + l.max[2] + 1) / 2);
+        const rad = 0.5 * Math.hypot(l.max[0] - l.min[0] + 1, l.max[1] + 1, l.max[2] - l.min[2] + 1);
+        cam.position.copy(dir).multiplyScalar(rad * 3.7).add(c);
+        cam.far = rad * 10; cam.updateProjectionMatrix();
+        cam.lookAt(c);
+      } else {
+        const v = ICON_VIEW[p.id] || { y: 0, d: 3.6 };
+        cam.position.copy(dir).multiplyScalar(v.d); cam.position.y += v.y;
+        cam.far = 50; cam.updateProjectionMatrix();
+        cam.lookAt(0, v.y, 0);
+      }
       r2.render(sc, cam);
       try { icons[p.id] = r2.domElement.toDataURL('image/png'); } catch (e) { /* ignore */ }
       sc.remove(obj);
@@ -929,6 +1000,7 @@
     sunOffset.copy(DAY.sunPos).lerp(NIGHT.sunPos, n);
     amb.intensity = DAY.ambI + (NIGHT.ambI - DAY.ambI) * n;
     M.winSide.emissiveIntensity = n * 1.3;
+    M.clock.emissiveIntensity = n * 0.9;
     M.lamp.emissiveIntensity = 0.5 + n * 0.8;
     M.glow.opacity = n * 0.95;
     M.glow.visible = n > 0.001; // glow sprites are skipped entirely in daylight
@@ -984,6 +1056,14 @@
     ghost.position.set(c.x + 0.5, c.y + 0.5, c.z + 0.5);
     if (kind === 'erase') { ghostEdgeMat.color.set('#ff5a4a'); ghostFillMat.color.set('#c8372d'); ghostFillMat.opacity = 0.32; ghost.scale.setScalar(1.05); }
     else { ghostEdgeMat.color.set('#ffffff'); ghostFillMat.color.set('#f0b429'); ghostFillMat.opacity = 0.28; ghost.scale.setScalar(1); }
+    ghost.visible = true;
+  }
+  function showGhostBox(min, max, ok) { // the space a landmark will fill (red if it won't fit)
+    ghost.position.set((min.x + max.x + 1) / 2, (min.y + max.y + 1) / 2, (min.z + max.z + 1) / 2);
+    ghost.scale.set(max.x - min.x + 1, max.y - min.y + 1, max.z - min.z + 1);
+    ghostEdgeMat.color.set(ok ? '#ffffff' : '#ff5a4a');
+    ghostFillMat.color.set(ok ? '#f0b429' : '#c8372d');
+    ghostFillMat.opacity = 0.12;
     ghost.visible = true;
   }
 
@@ -1189,7 +1269,7 @@
   // (re-sorted whenever the camera moves). This keeps stacked glass and ice from flickering or
   // hiding each other.
   const FULL = new Set(['stone', 'brick', 'wood', 'window', 'gold', 'grass', 'dirt', 'sand', 'cobble', 'snow', 'log', 'lava', 'lamp',
-    'bookshelf', 'red', 'blue', 'yellow', 'green', 'white', 'black']);
+    'bookshelf', 'clock', 'red', 'blue', 'yellow', 'green', 'teal', 'white', 'black']);
   // per face: normal, then 4 corners (x, y, z, u, v), counter-clockwise seen from outside
   const FACES = [
     [[1, 0, 0], [[1, 0, 0, 1, 0], [1, 1, 0, 1, 1], [1, 1, 1, 0, 1], [1, 0, 1, 0, 0]]],
@@ -1295,7 +1375,209 @@
     return Array.from(m.values());
   }
 
-  /* ---------- characters: original low-poly friends that wander the island ---------- */
+  /* ---------- landmarks: famous places built from ordinary blocks ---------- */
+  // Each landmark is a recipe of blocks around its own center (0, 0, 0), front facing +z.
+  // Placing one turns its front toward the player and adds every block that fits (squares that
+  // are already filled are skipped), as one step that Undo takes back. Nothing new is saved:
+  // a placed landmark is just blocks.
+  function shape() {
+    const m = new Map();
+    const s = {
+      put(x, y, z, t, r) { m.set(K(x, y, z), [x, y, z, t, r || 0]); },
+      del(x, y, z) { m.delete(K(x, y, z)); },
+      box(x0, y0, z0, x1, y1, z1, t) { for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) for (let z = z0; z <= z1; z++) s.put(x, y, z, t); },
+      square(e, y, t, from) { // the ring of squares e steps out from the middle (or from..e when filled)
+        for (let x = -e; x <= e; x++) for (let z = -e; z <= e; z++) { const d = Math.max(Math.abs(x), Math.abs(z)); if (d <= e && d >= (from == null ? e : from)) s.put(x, y, z, t); }
+      },
+      list() { return Array.from(m.values()); }
+    };
+    return s;
+  }
+  // the outline of a round (or oval) floor plan: squares inside that touch the outside
+  function outline(a, b) {
+    const inside = (x, z) => (x / a) * (x / a) + (z / b) * (z / b) <= 1, out = [];
+    for (let x = -Math.ceil(a); x <= Math.ceil(a); x++) for (let z = -Math.ceil(b); z <= Math.ceil(b); z++) {
+      if (inside(x, z) && (!inside(x + 1, z) || !inside(x - 1, z) || !inside(x, z + 1) || !inside(x, z - 1))) out.push([x, z]);
+    }
+    return out;
+  }
+  const LANDMARKS = [
+    { id: 'pyramid', name: 'Pyramid', called: 'the Great Pyramid', where: 'The Great Pyramid is in Giza, Egypt.',
+      build(s) {
+        for (let y = 0; y <= 7; y++) s.square(7 - y, y, y === 7 ? 'gold' : 'sand');
+        s.put(0, 0, 7, 'gate', 0); // the way in
+        s.put(0, 0, 0, 'chest', 0); s.put(-1, 0, -1, 'gold'); s.put(1, 0, -1, 'gold'); s.put(0, 1, -1, 'gold'); // treasure inside
+      } },
+    { id: 'eiffel', name: 'Eiffel Tower', called: 'the Eiffel Tower', where: 'The Eiffel Tower is in Paris, France.',
+      build(s) {
+        const I = 'iron';
+        const legs = (a, b, y) => { for (const sx of [-1, 1]) for (const sz of [-1, 1]) for (let i = a; i <= b; i++) for (let j = a; j <= b; j++) s.put(sx * i, y, sz * j, I); };
+        for (let y = 0; y <= 1; y++) legs(4, 5, y);
+        for (let y = 2; y <= 4; y++) legs(3, 4, y);
+        for (const g of [-1, 1]) { // the big arches between the legs
+          for (let i = -2; i <= 2; i++) { s.put(i, 4, g * 4, I); s.put(g * 4, 4, i, I); }
+          for (const i of [-2, 2]) { s.put(i, 3, g * 4, I); s.put(g * 4, 3, i, I); }
+        }
+        s.square(4, 5, I, 3); // first floor
+        for (let y = 6; y <= 8; y++) legs(2, 3, y);
+        s.square(3, 9, I, 2); // second floor
+        for (let y = 10; y <= 13; y++) legs(2, 2, y); // four slim legs that meet higher up
+        s.square(2, 13, I);
+        for (let y = 14; y <= 17; y++) legs(1, 1, y);
+        for (let y = 18; y <= 20; y++) s.put(0, y, 0, I);
+        s.square(1, 18, I);
+        s.square(1, 21, I, 0); // top floor
+        for (let y = 22; y <= 24; y++) s.put(0, y, 0, I);
+        s.put(0, 25, 0, 'lantern');
+      } },
+    { id: 'bigben', name: 'Big Ben', called: 'Big Ben', where: 'Big Ben is in London, England.',
+      build(s) {
+        const W = 'sand';
+        for (let y = 0; y <= 17; y++) s.square(2, y, W);
+        for (let y = 3; y <= 13; y += 2) for (const a of [-1, 1]) for (const g of [-1, 1]) { s.put(a, y, g * 2, 'window'); s.put(g * 2, y, a, 'window'); }
+        s.put(0, 0, 2, 'gate', 0);
+        for (const g of [-1, 1]) for (let a = -1; a <= 1; a++) for (let y = 15; y <= 17; y++) { s.put(a, y, g * 2, 'gold'); s.put(g * 2, y, a, 'gold'); }
+        for (const g of [-1, 1]) { s.put(0, 16, g * 2, 'clock'); s.put(g * 2, 16, 0, 'clock'); }
+        for (let y = 18; y <= 19; y++) s.square(2, y, W);
+        for (const g of [-1, 1]) for (const a of [-1, 0, 1]) { s.put(a, 18, g * 2, 'gate', 0); s.put(g * 2, 18, a, 'gate', 1); } // the bell room
+        s.square(2, 20, 'black', 0);
+        s.square(1, 21, 'black', 0); s.square(1, 22, 'black', 0);
+        s.put(0, 23, 0, 'black'); s.put(0, 24, 0, 'black'); s.put(0, 25, 0, 'gold');
+        for (const x of [-2, 2]) for (const z of [-2, 2]) s.put(x, 21, z, 'gold');
+      } },
+    { id: 'liberty', name: 'Lady Liberty', called: 'the Statue of Liberty', where: 'The Statue of Liberty is in New York, USA.',
+      build(s) {
+        const P = 'stone', G = 'teal';
+        s.square(4, 0, P); s.square(4, 1, P, 0); // base
+        for (let y = 2; y <= 7; y++) s.square(2, y, P);
+        for (const g of [-1, 1]) for (let y = 4; y <= 5; y++) { s.put(0, y, g * 2, 'window'); s.put(g * 2, y, 0, 'window'); }
+        s.square(2, 8, P, 0);
+        s.box(-1, 9, -1, 1, 16, 0, G); // robe
+        s.box(-1, 9, 1, 1, 10, 1, G); // hem and feet
+        s.box(-1, 17, -1, 1, 17, 0, G); // shoulders
+        s.box(0, 18, -1, 0, 19, 0, G); // head
+        s.box(-1, 20, 0, 1, 20, 0, G); s.put(-1, 21, 0, G); s.put(1, 21, 0, G); // crown with points
+        for (let y = 16; y <= 22; y++) s.put(-2, y, 0, G); // the raised arm (her right)
+        s.put(-2, 23, 0, 'gold'); s.put(-2, 24, 0, 'torch');
+        s.put(2, 15, 0, G); s.put(2, 14, 0, G); s.put(2, 13, 1, 'stone'); s.put(2, 14, 1, 'stone'); // arm and tablet
+      } },
+    { id: 'pisa', name: 'Leaning Tower', called: 'the Leaning Tower of Pisa', where: 'The Leaning Tower is in Pisa, Italy.',
+      build(s) {
+        const ring = outline(3.4, 3.4), core = outline(2.4, 2.4), W = 'white';
+        for (let y = 0; y <= 15; y++) {
+          const off = Math.floor(y / 4); // it leans a little more on every floor
+          const gallery = y >= 3 && y % 2 === 1; // rows of columns with the wall set back behind them
+          for (const [x, z] of ring) if (!gallery || (x + z) % 2 === 0) s.put(x + off, y, z, W);
+          if (gallery) for (const [x, z] of core) s.put(x + off, y, z, W);
+        }
+        for (const [x, z] of core) { if ((x + z) % 2 === 0) s.put(x + 4, 16, z, W); s.put(x + 4, 17, z, W); } // the bell room
+        s.put(4, 16, 0, 'lantern'); // the bell
+      } },
+    { id: 'colosseum', name: 'Colosseum', called: 'the Colosseum', where: 'The Colosseum is in Rome, Italy.',
+      build(s) {
+        const a = 9.5, b = 7.5;
+        for (const [x, z] of outline(a, b)) {
+          const ang = Math.atan2(-z, x), ruin = ang > 0.35 && ang < 1.75; // the broken side
+          const top = ruin ? 2 + Math.round(Math.abs(ang - 1.05) * 3) : 5;
+          const r = Math.abs(z / (b * b)) >= Math.abs(x / (a * a)) ? 0 : 1; // arches face out
+          for (let y = 0; y <= Math.min(top, 5); y++) s.put(x, y, z, y === 5 ? (Math.abs(x + z) % 2 ? 'window' : 'sand') : y % 2 ? 'sand' : 'gate', y % 2 || y === 5 ? 0 : r);
+        }
+        for (const [x, z] of outline(a - 3, b - 3)) { s.put(x, 0, z, 'sand'); s.put(x, 1, z, 'slab'); } // the stands
+        for (const [x, z] of outline(a - 4, b - 4)) s.put(x, 0, z, 'sand');
+      } },
+    { id: 'stonehenge', name: 'Stonehenge', called: 'Stonehenge', where: 'Stonehenge is in Wiltshire, England.',
+      build(s) {
+        const S = 'stone', R = 6, missing = [7, 8];
+        for (let k = 0; k < 12; k++) {
+          if (missing.includes(k)) continue;
+          const a = k * Math.PI / 6, x = Math.round(Math.cos(a) * R), z = Math.round(Math.sin(a) * R);
+          for (let y = 0; y <= 2; y++) s.put(x, y, z, S);
+        }
+        for (let d = 0; d < 360; d += 2) { // the lintels on top
+          const a = d * Math.PI / 180;
+          if (a > 3.4 && a < 4.5) continue;
+          s.put(Math.round(Math.cos(a) * R), 3, Math.round(Math.sin(a) * R), S);
+        }
+        for (let x = -5; x <= -3; x++) s.put(x, 0, -2, S); // a fallen stone
+        const tri = (x0, z0, alongX) => { // two tall stones and a stone across the top
+          const at = (d, y) => s.put(alongX ? x0 + d : x0, y, alongX ? z0 : z0 + d, S);
+          for (const d of [-1, 1]) for (let y = 0; y <= 3; y++) at(d, y);
+          for (let d = -1; d <= 1; d++) at(d, 4);
+        };
+        tri(0, -3, true); tri(-3, -1, false); tri(3, -1, false);
+        s.put(0, 0, 0, 'slab');
+      } },
+    { id: 'greatwall', name: 'Great Wall', called: 'the Great Wall', where: 'The Great Wall is in China.',
+      build(s) {
+        const S = 'stone';
+        const hill = (x, z) => Math.max(0, Math.round(5 - Math.abs(x) * 0.55 - Math.abs(z) * 0.75));
+        for (let x = -10; x <= 10; x++) for (let z = -7; z <= 7; z++) { // a grassy hill (only its outside)
+          const h = hill(x, z), low = Math.min(hill(x + 1, z), hill(x - 1, z), hill(x, z + 1), hill(x, z - 1));
+          for (let y = Math.max(0, Math.min(low, h - 1)); y < h; y++) s.put(x, y, z, y === h - 1 ? 'grass' : 'dirt');
+        }
+        const wallAt = (x, z0, z1, top) => { for (let z = z0; z <= z1; z++) for (let y = hill(x, z); y <= top; y++) s.put(x, y, z, S); };
+        for (let x = -14; x <= 14; x++) { // the wall climbs over the hill
+          const y0 = hill(x, 0);
+          wallAt(x, -1, 1, y0 + 2);
+          s.put(x, y0 + 3, -1, 'battlement'); s.put(x, y0 + 3, 1, 'battlement');
+        }
+        for (const tx of [-12, 0, 12]) { // watchtowers
+          const base = hill(tx, 0), top = base + 4;
+          for (let x = -2; x <= 2; x++) for (let z = -2; z <= 2; z++) {
+            const edge = Math.max(Math.abs(x), Math.abs(z)) === 2;
+            if (edge) wallAt(tx + x, z, z, top); else s.put(tx + x, top, z, S);
+            if (edge && (x === 0 || z === 0)) s.put(tx + x, top - 1, z, 'window');
+            if (edge) s.put(tx + x, top + 1, z, 'battlement');
+          }
+        }
+      } },
+    { id: 'moai', name: 'Moai', called: 'the Moai', where: 'The Moai are on Easter Island (Rapa Nui), Chile.',
+      build(s) {
+        const H = 'cobble';
+        s.box(-6, 0, -1, 6, 0, 1, 'stone'); // the platform
+        for (const cx of [-4, 0, 4]) {
+          s.box(cx - 1, 1, -1, cx + 1, 6, 0, H); // body and head
+          for (let i = -1; i <= 1; i++) s.put(cx + i, 5, 1, H); // brow
+          s.put(cx, 4, 1, H); s.put(cx, 3, 1, H); // nose
+          s.del(cx - 1, 4, 0); s.del(cx + 1, 4, 0); // deep eyes under the brow
+        }
+        s.box(-1, 7, -1, 1, 7, 0, 'brick'); // a red topknot on the middle one
+      } }
+  ];
+  const LANDMARK = {};
+  for (const l of LANDMARKS) {
+    const s = shape();
+    l.build(s);
+    l.blocks = s.list();
+    l.min = [Infinity, Infinity, Infinity]; l.max = [-Infinity, -Infinity, -Infinity];
+    for (const e of l.blocks) for (let i = 0; i < 3; i++) { l.min[i] = Math.min(l.min[i], e[i]); l.max[i] = Math.max(l.max[i], e[i]); }
+    LANDMARK[l.id] = l;
+  }
+  // The tray shows pieces and landmarks; only pieces are ever saved.
+  const TILES = PIECES.concat(LANDMARKS.map((l) => ({ id: l.id, name: l.name, cat: 'landmarks', landmark: l })));
+  const TILE = Object.fromEntries(TILES.map((p) => [p.id, p]));
+  function turnXZ(x, z, r) { return r === 1 ? [z, -x] : r === 2 ? [-x, -z] : r === 3 ? [-z, x] : [x, z]; } // matches pieceYaw
+  function turnRot(t, br, r) { return FACE4.has(t) ? (br + r) % 4 : FACE2.has(t) ? (br + r) % 2 : br; }
+  function landmarkSpot(l, at, r) { // the box it would fill, and whether it fits on the island
+    const [ax, az] = turnXZ(l.min[0], l.min[2], r), [bx, bz] = turnXZ(l.max[0], l.max[2], r);
+    const min = { x: at.x + Math.min(ax, bx), y: at.y, z: at.z + Math.min(az, bz) };
+    const max = { x: at.x + Math.max(ax, bx), y: at.y + l.max[1], z: at.z + Math.max(az, bz) };
+    return { min, max, ok: inBounds(min.x, min.y, min.z) && inBounds(max.x, max.y, max.z) };
+  }
+  function placeLandmark(l, at, r) {
+    if (!landmarkSpot(l, at, r).ok) { toast('There isn’t room for ' + l.called + ' here. Try a big open space.'); return false; }
+    const added = [];
+    for (const [x, y, z, t, br] of l.blocks) {
+      const [dx, dz] = turnXZ(x, z, r), rr = turnRot(t, br, r);
+      const X = at.x + dx, Y = at.y + y, Z = at.z + dz;
+      if (addBlock(X, Y, Z, t, rr, { pop: true, delay: y * 45 + Math.random() * 120 })) added.push([X, Y, Z, t, rr]);
+    }
+    if (!added.length) return false;
+    pushUndo({ op: 'many', list: added });
+    toast(l.where);
+    return true;
+  }
+
   const CHAR_IDS = ['knight', 'queen', 'sheep', 'chicken', 'cat', 'dragon'];
   const CHAR_SET = new Set(CHAR_IDS);
   const MAX_CHARS = 40;
@@ -1759,6 +2041,7 @@
       if (a.op === 'add') addBlock(a.x, a.y, a.z, a.t, a.r);
       else if (a.op === 'remove') removeBlock(a.x, a.y, a.z);
       else if (a.op === 'addChar') addChar(a.kind, a.x, a.y, a.z);
+      else if (a.op === 'many') for (const e of a.list) addBlock(e[0], e[1], e[2], e[3], e[4]);
     }
   }
   function useAccountCastle(list, d, ops, undoable) {
@@ -1950,6 +2233,7 @@
     else if (a.op === 'addChar') { const c = chars.find((q) => q.id === a.id); if (c) removeChar(c); }
     else if (a.op === 'removeChar') addChar(a.kind, a.x, a.y, a.z, { pop: true });
     else if (a.op === 'bulk') { loadBlocks(a.before.blocks, false); loadChars(a.before.chars); }
+    else if (a.op === 'many') for (const e of a.list) removeBlock(e[0], e[1], e[2]);
     changed();
     blip('undo');
     refreshGhost();
@@ -2007,6 +2291,21 @@
     } catch (e) { /* audio unavailable */ }
   }
 
+  function fanfare() { // a landmark appears
+    if (!soundOn) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const t = actx.currentTime;
+      [523, 659, 784, 1047].forEach((f, i) => {
+        const o = actx.createOscillator(), g = actx.createGain(), at = t + i * 0.11, dur = i === 3 ? 0.4 : 0.14;
+        o.type = 'triangle'; o.frequency.setValueAtTime(f, at);
+        g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.16, at + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+        o.connect(g); g.connect(actx.destination); o.start(at); o.stop(at + dur + 0.02);
+      });
+    } catch (e) { /* audio unavailable */ }
+  }
+
   /* ---------- UI ---------- */
   let mode = 'build';
   let selected = 'stone';
@@ -2029,18 +2328,18 @@
   const icons = makeIcons();
   let currentCat = 'castle';
   const catCount = {};
-  PIECES.forEach((p) => {
+  TILES.forEach((p) => {
     const i = catCount[p.cat] = (catCount[p.cat] || 0) + 1;
     const b = document.createElement('button');
     b.dataset.cat = p.cat;
     b.hidden = p.cat !== currentCat;
     b.type = 'button';
-    b.className = 'tile';
+    b.className = p.landmark ? 'tile big' : 'tile';
     b.id = 'piece-' + p.id;
     b.dataset.piece = p.id;
     b.setAttribute('aria-pressed', p.id === selected ? 'true' : 'false');
     const keyLabel = i <= 10 ? String(i % 10) : '';
-    b.title = p.name + (keyLabel ? ' (' + keyLabel + ')' : '');
+    b.title = (p.landmark ? p.landmark.where : p.name) + (keyLabel ? ' (' + keyLabel + ')' : '');
     const art = icons[p.id]
       ? '<img alt="" src="' + icons[p.id] + '">'
       : '<i class="swatch" style="background:' + p.swatch + '"></i>';
@@ -2065,7 +2364,7 @@
   tabFade();
 
   function selectPiece(id) {
-    if (PIECE[id] && PIECE[id].cat !== currentCat) showCat(PIECE[id].cat);
+    if (TILE[id] && TILE[id].cat !== currentCat) showCat(TILE[id].cat);
     selected = id;
     palette.querySelectorAll('.tile').forEach((t) => t.setAttribute('aria-pressed', t.dataset.piece === id ? 'true' : 'false'));
     const el = $('#piece-' + id);
@@ -2277,7 +2576,7 @@
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (/^[0-9]$/.test(e.key)) {
       const idx = e.key === '0' ? 9 : Number(e.key) - 1;
-      const list = PIECES.filter((p) => p.cat === currentCat);
+      const list = TILES.filter((p) => p.cat === currentCat);
       if (list[idx]) selectPiece(list[idx].id);
     } else if (e.key === 'e' || e.key === 'E') setMode(mode === 'erase' ? 'build' : 'erase');
     else if (e.key === 'b' || e.key === 'B') setMode('build');
@@ -2342,13 +2641,11 @@
     const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
     return Math.abs(dx) > Math.abs(dz) ? 1 : 0;
   }
-  function rotFor(id) {
-    if (FACE4.has(id)) {
-      const a = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
-      return ((Math.round(a / (Math.PI / 2)) % 4) + 4) % 4; // the front (or the low step) faces you
-    }
-    return FACE2.has(id) ? facingRot() : 0;
+  function facing4() { // which of four turns points a front at the camera
+    const a = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
+    return ((Math.round(a / (Math.PI / 2)) % 4) + 4) % 4;
   }
+  function rotFor(id) { return FACE4.has(id) ? facing4() : FACE2.has(id) ? facingRot() : 0; }
   function act(clientX, clientY, forceErase) {
     const p = pick(clientX, clientY);
     if (!p) return;
@@ -2359,6 +2656,8 @@
     }
     if (mode === 'erase' || forceErase) {
       if (p.remove && removeBlock(p.remove.x, p.remove.y, p.remove.z, { record: true })) { blip('remove'); changed(); hideHint(); }
+    } else if (LANDMARK[selected]) {
+      if (placeLandmark(LANDMARK[selected], p.place, facing4())) { fanfare(); changed(); hideHint(); }
     } else if (CHAR_SET.has(selected)) {
       if (chars.length >= MAX_CHARS) { toast('One island can hold up to ' + MAX_CHARS + ' characters'); return; }
       const c = p.place, y = charTarget(c);
@@ -2375,6 +2674,11 @@
   function updateGhost(clientX, clientY) {
     const p = pick(clientX, clientY);
     if (!p || p.char) { ghost.visible = false; return; }
+    if (mode !== 'erase' && LANDMARK[selected]) {
+      const spot = landmarkSpot(LANDMARK[selected], p.place, facing4());
+      showGhostBox(spot.min, spot.max, spot.ok);
+      return;
+    }
     if (mode !== 'erase' && CHAR_SET.has(selected)) {
       const y = charTarget(p.place);
       if (y >= 0) showGhost({ x: p.place.x, y, z: p.place.z }, 'build'); else ghost.visible = false;
