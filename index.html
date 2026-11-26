@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Stack-a-Castle</title>
+  <meta name="description" content="A 3D castle builder you play in the browser: stack blocks, add characters, switch day and night.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Pirata+One&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <div class="sky sky-day" aria-hidden="true"></div>
+  <div class="sky sky-night" aria-hidden="true"></div>
+  <div id="stage" role="application" aria-label="Castle building area"></div>
+
+  <div class="hud">
+    <header class="topbar" id="topbar">
+      <div class="brand">
+        <h1>Stack-a-<b>Castle</b></h1>
+        <p class="meta"><span id="count">0 blocks</span><span id="save" class="save" aria-live="polite"></span></p>
+      </div>
+      <div class="actions">
+        <button class="icon-btn" id="undo" type="button" aria-label="Undo" title="Undo (Ctrl+Z)" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+        </button>
+        <button class="icon-btn" id="night" type="button" aria-label="Switch to night" title="Day or night (N)">
+          <svg viewBox="0 0 24 24" aria-hidden="true" id="ico-moon"><path d="M20.5 13.2A8.5 8.5 0 1 1 10.8 3.5a6.6 6.6 0 0 0 9.7 9.7z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true" id="ico-sun" hidden><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
+        </button>
+        <button class="icon-btn" id="more" type="button" aria-label="More options" aria-haspopup="true" aria-expanded="false" aria-controls="menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>
+        </button>
+        <div class="menu" id="menu" role="menu" hidden>
+          <button type="button" role="menuitem" id="m-sample">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V8h3v2.5h2.5V8h3v2.5H14V8h3v2.5h1V8h3v13z"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/></svg>
+            <span>Build sample castle</span>
+          </button>
+          <button type="button" role="menuitem" id="m-view">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3"/></svg>
+            <span>Reset the view</span>
+          </button>
+          <button type="button" role="menuitem" id="m-spin">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5v5h-5"/></svg>
+            <span>Spin around</span><span class="state" id="spin-state">Off</span>
+          </button>
+          <button type="button" role="menuitem" id="m-sound">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+            <span>Sound</span><span class="state" id="sound-state">On</span>
+          </button>
+          <hr>
+          <button type="button" role="menuitem" id="m-export">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+            <span>Save to a file</span>
+          </button>
+          <button type="button" role="menuitem" id="m-import">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>
+            <span>Open a saved file</span>
+          </button>
+          <hr>
+          <button type="button" role="menuitem" id="m-clear" class="danger">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
+            <span id="clear-label">Clear everything</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="bottom">
+      <p class="hint" id="hint">Drag to spin · Pinch to zoom · Tap to build</p>
+      <nav class="dock" id="dock" aria-label="Building tools">
+        <div class="modes">
+          <button class="mode-btn build" id="mode-build" type="button" aria-pressed="true" title="Build (B)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12 4 7.5"/></svg>
+            <span>Build</span>
+          </button>
+          <button class="mode-btn erase" id="mode-erase" type="button" aria-pressed="false" title="Erase (E)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 20h12"/><path d="M5.6 13.4 13 6a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8L11.8 19.2H8.6l-3-3a2 2 0 0 1 0-2.8z"/><path d="m9.5 9.8 5.2 5.2"/></svg>
+            <span>Erase</span>
+          </button>
+        </div>
+        <div class="tray">
+          <div class="tabs" role="tablist" aria-label="Piece groups">
+            <button class="tab" type="button" role="tab" data-cat="castle" aria-selected="true">Castle</button>
+            <button class="tab" type="button" role="tab" data-cat="nature" aria-selected="false">Nature</button>
+            <button class="tab" type="button" role="tab" data-cat="build" aria-selected="false">Build</button>
+            <button class="tab" type="button" role="tab" data-cat="characters" aria-selected="false">Characters</button>
+          </div>
+          <div class="palette" id="palette" aria-label="Pieces"></div>
+        </div>
+      </nav>
+    </div>
+  </div>
+
+  <div class="fail" id="fail" hidden><p></p></div>
+</div>
+
+<input type="file" id="import-file" accept=".json,application/json" hidden>
+
+<!-- Three.js r128 (UMD build + OrbitControls). r128 is pinned: it is one of the last
+     versions that ships OrbitControls as a plain script (examples/js). -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
