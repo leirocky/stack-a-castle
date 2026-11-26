@@ -4,7 +4,7 @@ _Last updated: 26 Nov 2026 · Current version: **v1.0.0**_
 
 ## Where things stand
 
-**v1.0.0 is released** (26 Nov 2026): the game is complete, playable and hosted on GitHub Pages. Saving works on the device, through file backups, and online with Google sign-in (Firebase). **Working toward v1.1, "Smooth and solid"** (see [ROADMAP.md](ROADMAP.md)). Its first item is a real sign-in on two devices to confirm online saving end to end.
+**v1.0.0 is released** (26 Nov 2026): the game is complete, playable and hosted on GitHub Pages. Saving works on the device, through file backups, and online with Google sign-in (Firebase). Online saving was confirmed with a real Google sign-in on the live site (26 Nov 2026). **Working toward v1.1, "Smooth and solid"** (see [ROADMAP.md](ROADMAP.md)).
 
 ## History (v1.0 development)
 
@@ -22,7 +22,7 @@ _Last updated: 26 Nov 2026 · Current version: **v1.0.0**_
 
 ## Next up (v1.1)
 
-1. **Confirm online saving on the live site.** Sign in on one device, build something, then sign in on a second device and check the castle appears. If sign-in shows an error, the message names the Firebase setting to check.
+1. ~~Confirm online saving on the live site~~ ✅ Done 26 Nov 2026: real Google sign-in saves online. Still worth a check: edit on two devices at once and watch the live sync.
 2. **Faster drawing for big castles** (instancing).
 3. **Fix see-through glitches** with stacked glass and ice.
 4. **"How to play" card**, **screenshot button**, and an **offline message**.

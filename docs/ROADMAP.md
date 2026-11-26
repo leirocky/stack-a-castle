@@ -31,7 +31,7 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 
 | Item | Size |
 |---|---|
-| Confirm online saving end to end: sign in on two real devices, edit on both, check sync and the castle-choice dialog | S |
+| ✅ Confirm online saving end to end: real Google sign-in saves online (confirmed 26 Nov 2026). Remaining: edit on two devices at once to watch live sync | S |
 | Faster drawing for big castles: draw identical blocks in one batch (instancing), so 2,000+ blocks stay smooth on a tablet | M |
 | Fix see-through glitches when glass or ice blocks are stacked | S |
 | "How to play" card on first visit (spin, zoom, build, erase), reopenable from the ⋯ menu | S |
