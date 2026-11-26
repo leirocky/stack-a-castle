@@ -55,6 +55,8 @@ Then open http://localhost:8000. (Opening `index.html` directly also works in mo
 
 The site is served by **GitHub Pages** from the `main` branch, root folder. Pushing to `main` updates the live site within about a minute.
 
+When you change `css/style.css`, `js/game.js` or `js/firebase-config.js`, **raise the `?v=` number** on its link in `index.html` (for example `?v=3` to `?v=4`). Browsers keep old copies of these files for up to 10 minutes; the new number makes them load the new version right away.
+
 ## Project layout
 
 ```

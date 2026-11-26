@@ -18,6 +18,7 @@ The game is complete, playable and hosted on GitHub Pages. Saving works on the d
 | 26 Nov 2026 | Moved to this GitHub repo and GitHub Pages. Split into `index.html`, `css/style.css` and `js/game.js`. Added **Save to a file** and **Open a saved file**. |
 | 26 Nov 2026 | Firebase project `stack-a-castle` created (Spark plan): Google sign-in, Firestore, rules, and `leirocky.github.io` allowed. |
 | 26 Nov 2026 | **Online saving:** optional Google sign-in in the ⋯ menu; castles stored in Firestore and synced live across devices. If the account and the device have different castles at sign-in, the player picks which to keep, and Undo can switch back. The Claude-only save code was removed. Tested with a simulated Firebase: first sign-in, both choices, returning visits, sign-out, and refused saves. |
+| 26 Nov 2026 | Version numbers (`?v=`) on the CSS and JS links, so browsers load new code right after a deploy instead of a cached copy. |
 
 ## Next up
 
