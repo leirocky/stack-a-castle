@@ -101,6 +101,7 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 1. Make the changes and test them (see [ARCHITECTURE.md](ARCHITECTURE.md)).
 2. Set the new version number in `index.html`: the `?v=` on the three CSS and JS links, and the version line at the bottom of the menu.
 3. Add an entry to [CHANGELOG.md](../CHANGELOG.md), and update [PROGRESS.md](PROGRESS.md) and this file.
-4. Commit, push to `main`, and tag the release: `git tag -a v1.1.0 -m "v1.1.0" && git push origin v1.1.0`.
+4. Commit and push to `main`.
+5. Create the release on GitHub: **Releases → Draft a new release → Choose a tag**, type the new tag (for example `v1.1.0`), pick **Create new tag on publish**, target `main`, use the version as the title, paste the changelog entry, and click **Publish release**. (From a terminal, `git tag -a v1.1.0 -m "v1.1.0" && git push origin v1.1.0` creates the tag too.)
 
 Version numbers: the **last** number goes up for fixes (1.0.0 → 1.0.1), the **middle** one for new features (1.0 → 1.1), and the **first** one for big changes to how the game is played (1.x → 2.0).
