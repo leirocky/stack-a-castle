@@ -4,13 +4,21 @@ Everything runs in the browser. `index.html` holds the markup, `css/style.css` t
 
 ## The world
 
-- The island is a grid of cells, `x` and `z` from `−half` to `half − 1`, `y` from 0 to 31. Ground level is `y = 0`.
+- The island is a grid of cells, `x` and `z` from `−half` to `half − 1`, `y` from −3 to 31. Blocks stand on the grass at `y = 0`.
+- **Under the grass** (`y` from −1 to −3, `DEPTH`) is solid ground, except squares that have been dug out with the **Dig** tool. Those are kept in the `dug` set and can hold blocks, water and characters like any other square. `isEarth()` says whether a square is solid ground; `canHold()` whether a block can go there.
 - **Island size.** Every castle starts on a 300 × 300 island (`START_HALF = 150`). **⋯ → Bigger island** adds 50 squares on every side (`GROW`), up to 1000 × 1000 (`MAX_HALF = 500`); Undo shrinks it again, but never past a block. `setIsland(h)` changes the edges used for building and tapping, how far the camera can zoom out, and keeps characters on the island. The island mesh is built at 100 × 100 and scaled (`sizeIsland`), easing smoothly to the new size; the grass texture is shifted as it grows so each grass square stays lined up with the grid. The size is saved with the castle; `islandFor()` works out the island a castle needs (its saved size, at least the starting size, and room for every block).
 - When zoomed far out, the camera's near limit moves out with it, so distant surfaces don't flicker.
 - Placed blocks live in a `Map` called `world`, keyed `"x,y,z"`. Each record holds the piece type (`t`), rotation (`r`), its `x, y, z`, and how it is drawn (see **Drawing blocks**).
 - Tapping casts a ray from the camera and walks it square by square through the grid (a "voxel walk", `pickCell`) until it reaches a filled square or the grass. Hitting the side of a block places a new block against that face; hitting the grass places it on the ground. The whole square counts as the block, so odd shapes like flags and roofs are easy to tap. The walk takes the same time whether the castle has 10 blocks or 10,000.
 - Characters are tapped with an ordinary raycast against an invisible box on each one. Whichever is nearer, character or block, wins.
 - A tap is a press and release that moved less than 5 px (mouse) or 10 px (touch). Anything longer is treated as spinning the camera.
+
+### Digging holes
+
+- **Dig** is the first tile in the Nature tab (`TILES` entry with `tool: true`; its icon is drawn on a canvas). Tapping the grass digs that square; tapping inside a hole digs it deeper (the first solid square straight down); at the bottom (3 deep) it digs sideways instead. Each dig is an undo step (`dig`), and Undo fills it back in.
+- Tapping finds the ground the same way it finds blocks: the voxel walk treats solid ground squares as hits and returns them as `dig`.
+- **Drawing:** the grass on top of the island skips every square whose top layer is dug out. It reads a mask texture (`holeTex`, one pixel per square of the biggest island) in a small addition to the grass shader (`onBeforeCompile`). Inside the holes, `buildPits()` builds one mesh of dirt walls, floors and ceilings facing into the dug squares. A layer of plain dirt under the island (`under`) makes room for holes 3 deep.
+- Characters can walk into holes, fall into one dug under them, and stand on its floor. They can't climb more than one square, so a deep hole can trap them.
 
 ## Drawing blocks
 
@@ -62,6 +70,30 @@ The **Landmarks** tab holds famous places (`LANDMARKS`): the Great Pyramid, Eiff
 
 To add a landmark: add an entry to `LANDMARKS` with an `id` that isn't a piece id, a short `name` for the tile, `called` and `where` for messages, and a `build(s)` recipe. Keep it under the height limit (32) and roughly 30 × 30.
 
+### Nature
+
+When **Nature** is on (⋯ menu, saved in `stack-a-castle:nature`), some blocks act on their own after a player changes something next to them:
+
+| Block | What it does | Wait |
+|---|---|---|
+| Water | Falls into an empty square below; otherwise spreads into empty squares beside it, up to 3 squares from where it started | 0.2 s |
+| Lava | The same, but only 1 square; turns into cobblestone if it touches water | 0.75 s |
+| Ice | Melts into water if something hot (lava, torch, fireplace, candles, lamp, lantern) is next to it, diagonals included | 1.1 s |
+| Snow | Melts into a little water the same way | 1.1 s |
+| Sand | Falls while the square below is empty | 0.07 s |
+
+How it works (the **nature** section):
+
+- Nothing happens on its own, and opening a castle never changes it. A player's action calls `natureAfter()`, which "wakes" the blocks in the 3 × 3 × 3 cube around each changed square. A woken block runs its rule after its wait; anything the rule changes wakes the blocks around it, so water keeps running until it settles.
+- Each change made by nature (`natureSet`) is stored on the undo entry of the action that started it (`effects`), up to 600 per action. Undo puts those back, newest first, then undoes the action (`undoNature`). Pending wake-ups for an undone action are dropped.
+- For water and lava, the rotation number holds the **flow step**: 0 for a placed block, 1–3 as it spreads (lava: 1), plus 4 while it is falling. The step limits how far it spreads. Water spreads on solid ground and on still water (so a hole dug beside a moat fills), but a falling stream doesn't spread, and neither does anything on top of one.
+- Flowing water and lava are drawn shallower the farther they have spread (`FLOW_DEPTH`); water with more water above it fills its whole square, so a waterfall looks like one stream.
+- Changes are saved like any other change, at most about once every 0.7 seconds while nature is busy.
+
+### The sample castle
+
+`sampleWorld()` builds the castle a new player starts with (and **⋯ → Build sample castle**): a moat dug two squares deep and filled with water (so it has banks and stays put when nature is on), a bridge, a cobblestone path and a stone hall floor set into the ground, a gatehouse with turrets, curtain walls, four round towers with turrets, and a three-story keep with furniture on each floor and a tower on top. It returns its blocks and its dug squares.
+
 ## Characters
 
 Characters (`chars`) are separate from blocks and are not part of the grid map. Each one stores a cell, a home cell, and a small state machine:
@@ -75,7 +107,7 @@ Characters (`chars`) are separate from blocks and are not part of the grid map. 
 
 ## Undo
 
-Every change pushes an entry onto `undoStack`: `add`, `remove`, `addChar`, `removeChar`, `many` (a landmark: the list of blocks it added), or `bulk` (sample castle, clear, open file). A `bulk` entry stores the whole previous castle.
+Every change pushes an entry onto `undoStack`: `add`, `remove`, `addChar`, `removeChar`, `many` (a landmark: the list of blocks it added), `dig`, `island`, or `bulk` (sample castle, clear, open file). A `bulk` entry stores the whole previous castle, holes included. Each entry also collects what nature did because of it (see **Nature**).
 
 ## Saving
 
@@ -107,14 +139,15 @@ Anything built during the second or two of connecting is replayed on top of whic
 
 **Saves from a newer version.** If the online castle, or an opened file, uses pieces or characters this copy of the game doesn't know, it was saved by a newer version. The game leaves the castle on screen alone and asks the player to reload. For an online save it also stops saving online for that visit, so it can't overwrite the newer castle. (Version 1.0 doesn't have this check; see the known issues in PROGRESS.md.)
 
-## Save format (version 4)
+## Save format (version 5)
 
 Used for online saves and for **Save to a file**:
 
 ```json
 {
-  "v": 4,
+  "v": 5,
   "island": 300,
+  "dug": [14, -1, 0,   14, -2, 0],
   "pieces": ["stone", "brick", "...", "needs-newer-game"],
   "cells": [0, 0, 5, 3, 0,   1, 0, 5, 0, 0,   0, 0, 0, 56, 0],
   "charKinds": ["knight", "queen", "sheep", "chicken", "cat", "dragon"],
@@ -130,9 +163,16 @@ Used for online saves and for **Save to a file**:
 - Files without `chars` (version 2) load fine; the device keeps its own characters.
 - Versions 1.1 and 1.2 added furniture and three blocks (iron, clock, teal) without changing the format: new pieces just add names to `pieces`. Landmarks are saved as their blocks.
 
-**What changed in version 4** (game v1.3):
+**What changed in version 5** (game v1.3.1):
+
+- `dug` lists the dug-out squares of ground, 3 numbers each: `x, y, z` (`y` from −1 to −3). On the device it is kept in `stack-a-castle:dug`. Saves without it have no holes.
+- Water and lava may have rotation numbers 1–7 (their flow step; see **Nature**). Older copies of the game draw them as ordinary water and lava.
+- Blocks can have `y` from −3 (inside holes).
+- Version 1.3.0 counts a version 5 save as being from a newer version (it says "Update needed" and stops saving online). Versions 1.1 and 1.2 are stopped by the marker below.
+
+**What changed in version 4** (game v1.3.0):
 
 - `island` is the island's width in squares (300 to 1000). On the device it is kept in `stack-a-castle:island`.
 - The last entry in `pieces` is always the made-up name `needs-newer-game`, and the last 5 numbers in `cells` use it. This is a guard for older copies of the game: versions 1.1 and 1.2 don't know that name, so they show "Update needed" and stop saving online instead of loading the castle and later overwriting it with a smaller one. The game skips that entry when it loads.
 - Version 3 saves (no `island`) still load: they get the 300 × 300 starting island, with the castle in the middle where it was.
-- A save with `v` above 4, or an island bigger than this copy allows, counts as being from a newer version.
+- A save with `v` above 5 (above 4 in game v1.3.0), or an island bigger than this copy allows, counts as being from a newer version.

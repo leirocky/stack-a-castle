@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Pirata+One&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=1.3.0">
+  <link rel="stylesheet" href="css/style.css?v=1.3.1">
 </head>
 <body>
 <div id="app">
@@ -59,6 +59,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"/><path d="M20.5 3.5v5h-5"/></svg>
             <span>Spin around</span><span class="state" id="spin-state">Off</span>
           </button>
+          <button type="button" role="menuitem" id="m-nature" title="Water flows, lava cools into rock, ice and snow melt, sand falls">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6 6.4 6 10.5a6 6 0 0 1-12 0C6 9.4 12 3 12 3z"/><path d="M9.5 14.5a2.6 2.6 0 0 0 2.5 2.5"/></svg>
+            <span>Nature</span><span class="state" id="nature-state">On</span>
+          </button>
           <button type="button" role="menuitem" id="m-sound">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
             <span>Sound</span><span class="state" id="sound-state">On</span>
@@ -81,7 +85,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
             <span id="clear-label">Clear everything</span>
           </button>
-          <p class="menu-version">Stack-a-Castle v1.3.0</p>
+          <p class="menu-version">Stack-a-Castle v1.3.1</p>
         </div>
       </div>
     </header>
@@ -147,6 +151,10 @@
           <p><b>Erase</b> <span class="for-touch">Tap Erase, then tap a piece to take it away.</span><span class="for-mouse">Right-click a piece to take it away, or press E for Erase.</span></p>
         </li>
         <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6"/><path d="M17 7l-7.5 7.5"/><path d="M9.5 14.5 6 18a2.1 2.1 0 0 1-3-3l3.5-3.5z"/></svg>
+          <p><b>Dig</b> <span class="for-touch">Pick Dig in the Nature tab, then tap the grass to dig a hole. Water flows into holes!</span><span class="for-mouse">Pick Dig in the Nature tab, then click the grass to dig a hole. Water flows into holes!</span></p>
+        </li>
+        <li>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
           <p><b>Oops?</b> <span class="for-touch">The Undo arrow at the top puts it back.</span><span class="for-mouse">The Undo arrow at the top (or Ctrl+Z) puts it back.</span></p>
         </li>
@@ -170,7 +178,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script defer src="js/firebase-config.js?v=1.3.0"></script>
-<script defer src="js/game.js?v=1.3.0"></script>
+<script defer src="js/firebase-config.js?v=1.3.1"></script>
+<script defer src="js/game.js?v=1.3.1"></script>
 </body>
 </html>

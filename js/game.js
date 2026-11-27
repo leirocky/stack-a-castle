@@ -33,6 +33,7 @@
   const CHARS_KEY = 'stack-a-castle:characters';
   const SOUND_KEY = 'stack-a-castle:sound';
   const ISLAND_KEY = 'stack-a-castle:island';
+  const DUG_KEY = 'stack-a-castle:dug';
   // The island is half * 2 squares wide. Every castle starts at START_HALF and can grow by GROW
   // squares on each side (⋯ → Bigger island) up to MAX_HALF. MAXY is the height limit.
   const START_HALF = 150, GROW = 50, MAX_HALF = 500, MAXY = 32; // 300 × 300, growing to 1000 × 1000
@@ -924,6 +925,19 @@
     chest: { y: -0.18, d: 2.6 }, barrel: { y: -0.1, d: 2.9 }, candles: { y: -0.3, d: 1.5 }, flowers: { y: -0.27, d: 1.5 },
     rug: { y: -0.45, d: 2.9 }, bench: { y: -0.2, d: 2.9 }
   };
+  function shovelIcon() { // the Dig tool: a shovel over a hole in the grass
+    const S = 112, c = cv(S, S), g = c.getContext('2d');
+    g.fillStyle = '#6db24d'; g.beginPath(); g.ellipse(56, 82, 46, 20, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#5a3a24'; g.beginPath(); g.ellipse(56, 84, 26, 10, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#3b2616'; g.beginPath(); g.ellipse(56, 86, 18, 6, 0, 0, Math.PI * 2); g.fill();
+    g.save(); g.translate(60, 52); g.rotate(-0.55);
+    g.fillStyle = '#9a6a3a'; g.fillRect(-4, -46, 8, 50); // handle
+    g.fillStyle = '#6b4428'; g.fillRect(-12, -52, 24, 8);
+    g.fillStyle = '#aeb3bd'; g.beginPath(); g.moveTo(-13, 2); g.lineTo(13, 2); g.lineTo(11, 22); g.quadraticCurveTo(0, 34, -11, 22); g.closePath(); g.fill(); // blade
+    g.fillStyle = 'rgba(255,255,255,0.45)'; g.fillRect(-9, 5, 4, 14);
+    g.restore();
+    return c;
+  }
   function previewBlocks(list) { // a list of blocks as one InstancedMesh per piece part (for icons)
     const g = new THREE.Group(), byId = new Map(), m4 = new THREE.Matrix4(), m5 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
     for (const e of list) { if (!byId.has(e[3])) byId.set(e[3], []); byId.get(e[3]).push(e); }
@@ -958,6 +972,7 @@
     const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
     const dir = new THREE.Vector3(1, 0.8, 1.25).normalize();
     for (const p of TILES) {
+      if (p.tool) { icons[p.id] = shovelIcon().toDataURL('image/png'); continue; }
       const obj = p.landmark ? previewBlocks(p.landmark.blocks) : makePiece(p.id, 0);
       sc.add(obj);
       if (p.landmark) { // frame the whole landmark
@@ -1020,10 +1035,38 @@
   island.position.y = -0.8;
   island.receiveShadow = true;
   scene.add(island);
+  // a layer of plain dirt under the island, deep enough for holes (sides only: holes look down into it)
+  T.under = tex(plainCanvas('#7b4e33', 0.25, 34, 200), BASE_HALF, 1);
+  M.under = std({ map: T.under });
+  const unseen = new THREE.MeshBasicMaterial({ visible: false });
+  const under = new THREE.Mesh(new THREE.BoxGeometry(BASE_HALF * 2, 2, BASE_HALF * 2), [M.under, M.under, unseen, unseen, M.under, M.under]);
+  under.position.y = -2.6;
+  scene.add(under);
   const rock = new THREE.Mesh(rockGeometry(), M.rock);
   rock.rotation.x = Math.PI;
-  rock.position.y = -1.6 - 13;
+  rock.position.y = -3.6 - 13;
   scene.add(rock);
+
+  // Holes: the grass skips every square whose top layer of ground is dug out (a mask texture,
+  // one pixel per square of the biggest island), and dirt walls are drawn inside the holes.
+  const HOLE_W = MAX_HALF * 2;
+  const holeData = new Uint8Array(HOLE_W * HOLE_W);
+  const holeTex = new THREE.DataTexture(holeData, HOLE_W, HOLE_W, THREE.LuminanceFormat, THREE.UnsignedByteType);
+  holeTex.magFilter = holeTex.minFilter = THREE.NearestFilter;
+  holeTex.generateMipmaps = false;
+  holeTex.needsUpdate = true;
+  M.grass.onBeforeCompile = (sh) => {
+    sh.uniforms.holeMap = { value: holeTex };
+    sh.vertexShader = 'varying vec2 vHoleXZ;\n' + sh.vertexShader.replace('#include <project_vertex>',
+      '#include <project_vertex>\n  vHoleXZ = (modelMatrix * vec4(transformed, 1.0)).xz;');
+    sh.fragmentShader = 'uniform sampler2D holeMap;\nvarying vec2 vHoleXZ;\n' + sh.fragmentShader.replace('void main() {',
+      'void main() {\n  if (texture2D(holeMap, (vHoleXZ + ' + MAX_HALF + '.0) / ' + HOLE_W + '.0).r > 0.5) discard;');
+  };
+  const pits = new THREE.Mesh(new THREE.BufferGeometry(), M.dirtB);
+  pits.receiveShadow = true;
+  pits.frustumCulled = false;
+  pits.visible = false;
+  scene.add(pits);
 
   const clouds = [];
   (function makeClouds() {
@@ -1051,8 +1094,10 @@
   function sizeIsland(h) {
     const k = h / BASE_HALF, ky = Math.sqrt(k);
     island.scale.set(k, 1, k);
+    under.scale.set(k, 1, k);
     rock.scale.set(k, ky, k); // deeper rock under a bigger island
-    rock.position.y = -1.6 - 13 * ky;
+    rock.position.y = -3.6 - 13 * ky;
+    T.under.repeat.set(h, 1); T.under.offset.set(-h / 2, 0);
     // keep one grass square per grid square, lined up with the blocks, at any size
     T.grass.repeat.set(h, h); T.grass.offset.set(-h / 2, -h / 2);
     T.dirt.repeat.set(h, 1); T.dirt.offset.set(-h / 2, 0);
@@ -1073,11 +1118,12 @@
     showIslandSize();
   }
   // The island a castle needs: its saved width (or the starting size), with room for every block and character.
-  function islandFor(list, charList, width) {
+  function islandFor(list, charList, width, dugList) {
     let need = width > 0 ? Math.ceil(width / 2) : START_HALF;
     const fit = (x, z) => { need = Math.max(need, -x, x + 1, -z, z + 1); };
     for (const e of list || []) fit(e[0], e[2]);
     for (const c of charList || []) fit(c[1], c[3]);
+    for (let i = 0; i + 2 < (dugList || []).length; i += 3) fit(dugList[i], dugList[i + 2]);
     return Math.min(MAX_HALF, Math.max(START_HALF, need));
   }
 
@@ -1112,8 +1158,14 @@
   // world maps "x,y,z" to a block record: { t: piece, r: rotation, x, y, z } plus how it is drawn.
   const world = new Map();
   const K = (x, y, z) => x + ',' + y + ',' + z;
-  const inBounds = (x, y, z) => x >= -half && x < half && z >= -half && z < half && y >= 0 && y < MAXY;
-  const inMax = (x, y, z) => x >= -MAX_HALF && x < MAX_HALF && z >= -MAX_HALF && z < MAX_HALF && y >= 0 && y < MAXY; // fits the biggest island
+  // Below the grass (y < 0) is solid ground, down to DEPTH squares, except where it has been dug
+  // out (the dug set). Dug squares can hold blocks, water, characters... like squares above ground.
+  const DEPTH = 3;
+  const dug = new Set();
+  const inBounds = (x, y, z) => x >= -half && x < half && z >= -half && z < half && y >= -DEPTH && y < MAXY;
+  const inMax = (x, y, z) => x >= -MAX_HALF && x < MAX_HALF && z >= -MAX_HALF && z < MAX_HALF && y >= -DEPTH && y < MAXY; // fits the biggest island
+  const isEarth = (x, y, z) => y < 0 && (y < -DEPTH || !dug.has(K(x, y, z))); // solid, undug ground
+  const canHold = (x, y, z) => inBounds(x, y, z) && (y >= 0 || dug.has(K(x, y, z)));
   const pops = [];
   const easeOutBack = (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
   function startPop(obj, delay, rec) {
@@ -1138,7 +1190,7 @@
   const vP = new THREE.Vector3(), vS = new THREE.Vector3(1, 1, 1);
 
   function restOffset(rec) { // candles, flowers and rugs sit down onto low furniture under them
-    if (!RESTS.has(rec.t) || rec.y === 0) return 0;
+    if (!RESTS.has(rec.t)) return 0;
     const b = world.get(K(rec.x, rec.y - 1, rec.z));
     return b && TOP[b.t] ? TOP[b.t] - 1 : 0;
   }
@@ -1174,8 +1226,11 @@
     b.cap = cap;
   }
   function batchSet(b, rec) {
-    qY.setFromAxisAngle(UP, pieceYaw(rec.t, rec.r));
-    vP.set(rec.x + 0.5, rec.y + 0.5 + restOffset(rec), rec.z + 0.5);
+    const fl = FLOW_DEPTH[rec.t], above = fl && world.get(K(rec.x, rec.y + 1, rec.z));
+    const s = !fl ? 1 : above && above.t === rec.t ? FILL[rec.t] : fl[Math.min(flowStep(rec.r), fl.length - 1)]; // flowing water and lava are shallower; under more of the same they fill the square
+    qY.setFromAxisAngle(UP, fl ? 0 : pieceYaw(rec.t, rec.r));
+    vP.set(rec.x + 0.5, rec.y + 0.5 + restOffset(rec) - 0.5 * (1 - s), rec.z + 0.5);
+    vS.set(1, s, 1);
     mA.compose(vP, qY, vS);
     for (const p of b.parts) {
       mB.multiplyMatrices(mA, p.local);
@@ -1240,8 +1295,9 @@
   }
   const SIDES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
   function neighborsChanged(x, y, z) {
-    const up = world.get(K(x, y + 1, z));
+    const up = world.get(K(x, y + 1, z)), down = world.get(K(x, y - 1, z));
     if (up && RESTS.has(up.t)) redraw(up);
+    if (down && FLOW_DEPTH[down.t] && down.slot >= 0) redraw(down); // water under water is drawn full height
     if (clearRecs.size && !clearDirty) {
       for (const [dx, dy, dz] of SIDES) { const n = world.get(K(x + dx, y + dy, z + dz)); if (n && CLEAR.has(n.t)) { clearDirty = true; break; } }
     }
@@ -1250,7 +1306,7 @@
   function addBlock(x, y, z, t, r, opts) {
     opts = opts || {};
     const k = K(x, y, z);
-    if (world.has(k) || !inBounds(x, y, z) || !PIECE[t] || CHAR_SET.has(t)) return false;
+    if (world.has(k) || !canHold(x, y, z) || !PIECE[t] || CHAR_SET.has(t)) return false;
     const rec = { t, r: r || 0, x, y, z, slot: -1, obj: null, temp: null, glows: null };
     world.set(k, rec);
     if (opts.pop && !reduceMotion) {
@@ -1299,9 +1355,12 @@
   }
   function loadBlocks(list, animate) {
     clearBlocks();
-    if (list.length > 1200) animate = false; // big castles appear at once
+    let from = 0; // which layers pop up; lower ones appear at once
+    if (animate && list.length > 1200) { from = 1; if (list.filter((e) => e[1] >= 1).length > 2600) animate = false; }
+    const top = list.reduce((m, e) => Math.max(m, e[1]), 0), step = Math.min(110, 2000 / (top + 1));
     for (const e of list) {
-      addBlock(e[0], e[1], e[2], e[3], e[4] || 0, animate ? { pop: true, delay: e[1] * 110 + Math.random() * 260 } : null);
+      const pop = animate && e[1] >= from;
+      addBlock(e[0], e[1], e[2], e[3], e[4] || 0, pop ? { pop: true, delay: (e[1] - from) * step + Math.random() * 260 } : null);
     }
   }
 
@@ -1333,7 +1392,7 @@
     for (const rec of clearRecs) {
       const u0 = rec.t === 'glass' ? 0.004 : 0.504;
       for (const [n, cs] of FACES) {
-        if (n[1] === -1 && rec.y === 0) continue; // resting on the grass
+        if (n[1] === -1 && isEarth(rec.x, rec.y - 1, rec.z)) continue; // resting on the ground
         const nb = world.get(K(rec.x + n[0], rec.y + n[1], rec.z + n[2]));
         if (nb && !nb.temp && (nb.t === rec.t || FULL.has(nb.t))) continue;
         for (const c of cs) { pos.push(rec.x + c[0], rec.y + c[1], rec.z + c[2]); nor.push(n[0], n[1], n[2]); uv.push(u0 + c[3] * 0.492, c[4]); }
@@ -1379,42 +1438,238 @@
     clearMesh.geometry.index.needsUpdate = true;
   }
 
-  function sampleCastle() {
-    const m = new Map();
-    const put = (x, y, z, t, r) => m.set(K(x, y, z), [x, y, z, t, r || 0]);
-    for (let i = -7; i <= 7; i++) { put(i, 0, -7, 'water'); put(i, 0, 7, 'water'); put(-7, 0, i, 'water'); put(7, 0, i, 'water'); }
-    put(0, 0, 7, 'wood');
-    for (let i = -4; i <= 4; i++) {
-      for (const [x, z] of [[i, -5], [i, 5], [-5, i], [5, i]]) {
-        const isGate = z === 5 && x === 0;
-        put(x, 0, z, isGate ? 'gate' : 'stone', 0);
-        put(x, 1, z, Math.abs(i) === 2 ? 'window' : 'stone');
-        put(x, 2, z, 'battlement');
+  /* ---------- digging holes ---------- */
+  let pitsDirty = false;
+  function setDug(x, y, z, on) {
+    const k = K(x, y, z);
+    if (on) dug.add(k); else dug.delete(k);
+    if (y === -1 && inMax(x, y, z)) { holeData[(z + MAX_HALF) * HOLE_W + x + MAX_HALF] = on ? 255 : 0; holeTex.needsUpdate = true; }
+    pitsDirty = true;
+  }
+  function digAt(x, y, z, opts) { // dig out one square of ground
+    if (!inBounds(x, y, z) || !isEarth(x, y, z)) return false;
+    setDug(x, y, z, true);
+    if (opts && opts.record) pushUndo({ op: 'dig', x, y, z });
+    return true;
+  }
+  function fillAt(x, y, z) { // put the ground back (Undo)
+    if (!dug.has(K(x, y, z))) return false;
+    if (world.has(K(x, y, z))) removeBlock(x, y, z);
+    setDug(x, y, z, false);
+    return true;
+  }
+  function serializeDug() { const out = []; for (const k of dug) out.push(...k.split(',').map(Number)); return out; }
+  function loadDug(flat) { // replace every hole (flat list: x, y, z, x, y, z...)
+    for (const k of Array.from(dug)) { const [x, y, z] = k.split(',').map(Number); setDug(x, y, z, false); }
+    for (let i = 0; i + 2 < (flat || []).length; i += 3) setDug(flat[i], flat[i + 1], flat[i + 2], true);
+  }
+  function validDug(flat) {
+    return Array.isArray(flat) && flat.length % 3 === 0 && flat.every(Number.isInteger) &&
+      flat.every((v, i) => i % 3 !== 1 || (v < 0 && v >= -DEPTH)) && flat.every((v, i) => i % 3 === 1 || Math.abs(v) <= MAX_HALF);
+  }
+  function buildPits() { // dirt walls, floors and ceilings inside the holes, facing into them
+    pitsDirty = false;
+    const pos = [], nor = [], uv = [];
+    for (const k of dug) {
+      const [x, y, z] = k.split(',').map(Number);
+      for (const [n, cs] of FACES) {
+        if (!isEarth(x + n[0], y + n[1], z + n[2])) continue;
+        for (const i of [0, 2, 1, 0, 3, 2]) { const c = cs[i]; pos.push(x + c[0], y + c[1], z + c[2]); nor.push(-n[0], -n[1], -n[2]); uv.push(c[3], c[4]); }
       }
     }
-    for (const [x, z] of [[-5, -5], [5, -5], [-5, 5], [5, 5]]) {
-      for (let y = 0; y < 4; y++) put(x, y, z, 'tower');
-      put(x, 4, z, 'roof');
+    const geo = new THREE.BufferGeometry();
+    if (pos.length) {
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
     }
-    for (let x = -1; x <= 1; x++) {
-      for (let z = -1; z <= 1; z++) {
-        for (let y = 0; y < 4; y++) {
-          const midEdge = (x === 0) !== (z === 0);
-          put(x, y, z, (y === 2 && midEdge) ? 'window' : 'brick');
-        }
-        if (!(x === 0 && z === 0)) put(x, 4, z, 'battlement');
+    pits.geometry.dispose();
+    pits.geometry = geo;
+    pits.visible = pos.length > 0;
+  }
+
+  /* ---------- nature: water flows, lava cools, ice and snow melt, sand falls ---------- */
+  // Nothing happens on its own: a change a player makes "wakes" the blocks around it, and each
+  // woken block follows its rule after a short wait (water quickly, lava slowly). A rule's
+  // changes wake the blocks around them in turn, so water keeps running until it settles.
+  // Every change is stored on the undo entry of the player's action (its "cause"), so one Undo
+  // takes back the action and everything it set off. For water and lava, the rotation number
+  // holds how far it has flowed from where it started (0 = placed), which limits its reach.
+  const NATURE_KEY = 'stack-a-castle:nature';
+  const FLOW_DEPTH = { water: [1, 0.78, 0.6, 0.42], lava: [1, 0.55] }; // drawn height by flow step
+  const FILL = { water: 1 / 0.82, lava: 1 }; // stretch that fills a whole square (a water block is 0.82 tall)
+  const REACH = { water: 3, lava: 1 }; // squares it can run across flat ground
+  const WAIT = { water: 220, lava: 750, ice: 1100, snow: 1100, sand: 70 }; // ms before a woken block acts
+  const HEAT = new Set(['lava', 'torch', 'fireplace', 'candles', 'lamp', 'lantern']);
+  const nature = { on: store.get(NATURE_KEY) !== 'off', queue: new Map(), dirty: false, savedAt: 0 };
+  const near = (x, y, z, fn) => { // calls fn for each block in the 3 × 3 × 3 cube around a square
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+      const b = world.get(K(x + dx, y + dy, z + dz));
+      if (b && fn(b) === true) return true;
+    }
+    return false;
+  };
+  function wakeAround(x, y, z, cause) {
+    near(x, y, z, (b) => {
+      if (!RULES[b.t]) return;
+      const k = K(b.x, b.y, b.z), at = performance.now() + WAIT[b.t], w = nature.queue.get(k);
+      if (!w || w.at > at) nature.queue.set(k, { at, cause: w ? w.cause : cause });
+    });
+  }
+  function natureAfter(cells) { // a player just changed these squares
+    const cause = undoStack[undoStack.length - 1];
+    if (!nature.on || !cause) return;
+    for (const c of cells) wakeAround(c[0], c[1], c[2], cause);
+  }
+  const SOUND_OF = { water: 'splash', ice: 'splash', snow: 'splash', cobble: 'hiss', sand: 'thud' };
+  function natureSet(x, y, z, t, r, cause) { // one change made by nature, remembered for Undo
+    if (cause.budget <= 0 || !inBounds(x, y, z)) return false;
+    const old = world.get(K(x, y, z));
+    if (!old && !t) return false;
+    if (!cause.effects.length || t === 'cobble') blip(SOUND_OF[t || 'sand'] || 'splash');
+    cause.effects.push({ x, y, z, from: old ? [old.t, old.r] : null, to: t ? [t, r || 0] : null });
+    cause.budget--;
+    if (old) removeBlock(x, y, z);
+    if (t) addBlock(x, y, z, t, r || 0);
+    nature.dirty = true;
+    wakeAround(x, y, z, cause);
+    return true;
+  }
+  const empty = (x, y, z) => canHold(x, y, z) && !world.has(K(x, y, z));
+  // A water or lava block's number is its flow step (0 = placed, still), plus 4 while it is falling.
+  const flowStep = (r) => ((r || 0) >= 4 ? r - 4 : r || 0);
+  function flow(b, cause) { // water and lava: fall into the square below, or spread across what's under them
+    const step = flowStep(b.r), falling = (b.r || 0) >= 4;
+    if (empty(b.x, b.y - 1, b.z)) { natureSet(b.x, b.y - 1, b.z, b.t, 4 + step, cause); return; }
+    const under = world.get(K(b.x, b.y - 1, b.z));
+    // a falling stream doesn't spread when it lands in water, and nothing spreads on top of a falling stream;
+    // the top of a pond (water on still water) does spread, so a hole dug beside a moat fills up
+    if (under && FLOW_DEPTH[under.t] && (falling || (under.r || 0) >= 4)) return;
+    if (step >= REACH[b.t]) return;
+    for (const [dx, dz] of DIRS) if (empty(b.x + dx, b.y, b.z + dz)) natureSet(b.x + dx, b.y, b.z + dz, b.t, step + 1, cause);
+  }
+  const touching = (b, t) => [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]
+    .some(([dx, dy, dz]) => { const n = world.get(K(b.x + dx, b.y + dy, b.z + dz)); return !!n && n.t === t; });
+  const heatNear = (b) => near(b.x, b.y, b.z, (n) => HEAT.has(n.t));
+  const RULES = {
+    water: flow,
+    lava(b, c) { if (touching(b, 'water')) natureSet(b.x, b.y, b.z, 'cobble', 0, c); else flow(b, c); }, // lava meeting water cools into rock
+    ice(b, c) { if (heatNear(b)) natureSet(b.x, b.y, b.z, 'water', 0, c); },
+    snow(b, c) { if (heatNear(b)) natureSet(b.x, b.y, b.z, 'water', 2, c); },
+    sand(b, c) { if (empty(b.x, b.y - 1, b.z)) { natureSet(b.x, b.y, b.z, null, 0, c); natureSet(b.x, b.y - 1, b.z, 'sand', 0, c); } }
+  };
+  function natureStep(now) { // run the woken blocks whose wait is over (a few per frame)
+    let n = 0;
+    for (const [k, w] of nature.queue) {
+      if (w.at > now) continue;
+      nature.queue.delete(k);
+      if (!nature.on || !w.cause.live) continue;
+      const b = world.get(k);
+      if (b && RULES[b.t]) RULES[b.t](b, w.cause);
+      if (++n >= 120) break;
+    }
+    if (nature.dirty && (now - nature.savedAt > 700 || !nature.queue.size)) { nature.dirty = false; nature.savedAt = now; changed(); }
+  }
+  const sameState = (b, s) => (b ? !!s && b.t === s[0] && (b.r || 0) === (s[1] || 0) : !s);
+  function undoNature(a) { // put back what nature changed, newest first, where it hasn't changed again since
+    a.live = false;
+    for (let i = (a.effects || []).length - 1; i >= 0; i--) {
+      const e = a.effects[i], b = world.get(K(e.x, e.y, e.z));
+      if (!sameState(b, e.to)) continue;
+      if (b) removeBlock(e.x, e.y, e.z);
+      if (e.from) addBlock(e.x, e.y, e.z, e.from[0], e.from[1]);
+    }
+  }
+  function redoNature(a) { // replay nature's changes (when catching up after connecting)
+    for (const e of a.effects || []) {
+      if (world.has(K(e.x, e.y, e.z))) removeBlock(e.x, e.y, e.z);
+      if (e.to) addBlock(e.x, e.y, e.z, e.to[0], e.to[1]);
+    }
+  }
+
+  /* ---------- sample castle ---------- */
+  // A big castle with a real moat dug into the ground and filled with water (so it has banks on
+  // both sides and stays put), a bridge and gatehouse, four round towers with turrets, and a
+  // three-story keep with furniture on every floor. Returns its blocks and its dug-out squares.
+  function sampleWorld() {
+    const base = shape(), holes = [];
+    const s = { put: (x, y, z, t, r) => base.put(x, y - 1, z, t, r) }; // the castle below is written with the ground floor at y = 1
+    const dig = (x, y, z, t) => { holes.push(x, y, z); if (t) base.put(x, y, z, t); };
+    for (let x = -15; x <= 15; x++) for (let z = -15; z <= 15; z++) {
+      if (Math.max(Math.abs(x), Math.abs(z)) >= 14) { dig(x, -1, z, 'water'); dig(x, -2, z, 'water'); } // the moat, two deep
+    }
+    for (let z = 16; z <= 22; z++) dig(0, -1, z, 'cobble'); // a path set into the ground
+    for (let x = -4; x <= 4; x++) for (let z = -7; z <= -1; z++) dig(x, -1, z, 'cobble'); // a stone floor in the great hall
+    for (let z = 14; z <= 15; z++) { for (let x = -1; x <= 1; x++) base.put(x, 0, z, 'wood'); base.put(-1, 1, z, 'fence', 1); base.put(1, 1, z, 'fence', 1); } // bridge
+    base.put(-1, 0, 16, 'torch'); base.put(1, 0, 16, 'torch');
+
+    // curtain wall with arrow slits and battlements
+    for (let y = 1; y <= 5; y++) for (let x = -11; x <= 11; x++) for (let z = -11; z <= 11; z++) {
+      if (Math.max(Math.abs(x), Math.abs(z)) !== 11) continue;
+      s.put(x, y, z, y === 3 && (x + z) % 4 === 0 ? 'window' : 'stone');
+      if (y === 5) s.put(x, 6, z, 'battlement');
+    }
+    // round corner towers
+    for (const cx of [-11, 11]) for (const cz of [-11, 11]) {
+      for (const [x, z] of outline(2.4, 2.4)) {
+        for (let y = 1; y <= 8; y++) s.put(cx + x, y, cz + z, (y === 4 || y === 7) && (x === 0 || z === 0) ? 'window' : 'stone');
+        s.put(cx + x, 9, cz + z, 'battlement');
       }
+      for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) s.put(cx + x, 8, cz + z, 'stone');
+      s.put(cx, 9, cz, 'tower'); s.put(cx, 10, cz, 'tower'); s.put(cx, 11, cz, 'roof'); // a little turret on top
     }
-    put(0, 0, 1, 'gate', 0);
-    put(0, 4, 0, 'flag');
-    put(-3, 0, -3, 'gold'); put(3, 0, -3, 'gold'); put(3, 1, -3, 'gold');
-    put(-3, 0, 3, 'tree'); put(3, 0, 3, 'tree');
-    put(-2, 0, 3, 'torch'); put(2, 0, 3, 'torch');
-    put(-1, 0, 6, 'torch'); put(1, 0, 6, 'torch');
-    for (const [x, z] of [[-10, -10], [-9, -4], [9, -10], [10, -5], [-10, 4], [10, 3], [-9, 10], [9, 10], [-4, 10], [5, 10],
-      [-16, -15], [15, -16], [-17, 12], [16, 15], [1, -16], [-15, -1], [17, -3], [3, 16], [-12, 17], [12, -17],
-      [-24, -22], [23, -25], [-26, 18], [25, 22], [-5, -26], [-25, -6], [26, 4], [6, 25]]) put(x, 0, z, 'tree');
-    return Array.from(m.values());
+    // gatehouse with two turrets
+    for (let x = -3; x <= 3; x++) for (let z = 10; z <= 12; z++) for (let y = 1; y <= 7; y++) {
+      const edge = Math.abs(x) === 3 || z !== 11 || y === 7;
+      if (edge) s.put(x, y, z, (y === 4 && z === 12 && Math.abs(x) === 1) ? 'window' : 'stone');
+      if (y === 7) s.put(x, 8, z, Math.abs(x) === 3 && z === 12 ? 'tower' : 'battlement');
+    }
+    for (let x = -2; x <= 2; x++) for (let y = 1; y <= 6; y++) s.put(x, y, 11, 'stone');
+    for (let z = 10; z <= 12; z++) { s.put(0, 1, z, 'gate', 0); s.put(0, 2, z, 'stone'); }
+    for (const x of [-3, 3]) { for (let y = 1; y <= 8; y++) s.put(x, y, 12, 'tower'); s.put(x, 9, 12, 'roof'); }
+    s.put(0, 9, 11, 'flag');
+
+    // the keep: three stories, wooden floors, windows, battlements and a tower on top
+    const K0 = -5, K1 = 5, Z0 = -8, Z1 = 0;
+    for (let y = 1; y <= 12; y++) for (let x = K0; x <= K1; x++) for (let z = Z0; z <= Z1; z++) {
+      const edge = x === K0 || x === K1 || z === Z0 || z === Z1, corner = (x === K0 || x === K1) && (z === Z0 || z === Z1);
+      if (edge) {
+        const win = !corner && (x + z) % 2 === 0 && (y === 2 || y === 3 || y === 6 || y === 7 || y === 10 || y === 11);
+        s.put(x, y, z, win ? 'window' : y <= 4 ? 'stone' : 'brick');
+      } else if (y === 5 || y === 9) s.put(x, y, z, 'wood');
+    }
+    for (let x = K0; x <= K1; x++) for (let z = Z0; z <= Z1; z++) {
+      const edge = x === K0 || x === K1 || z === Z0 || z === Z1;
+      s.put(x, 13, z, edge ? 'battlement' : 'slab');
+    }
+    s.put(0, 1, Z1, 'gate', 0);
+    for (let y = 13; y <= 17; y++) for (let x = -1; x <= 1; x++) for (let z = -5; z <= -3; z++) {
+      if (x === 0 && z === -4) continue;
+      s.put(x, y, z, y === 15 && (x === 0 || z === -4) ? 'window' : 'brick');
+    }
+    for (let x = -1; x <= 1; x++) for (let z = -5; z <= -3; z++) s.put(x, 18, z, x === 0 && z === -4 ? 'stone' : 'battlement');
+    s.put(0, 19, -4, 'flag');
+    // ground floor: the great hall
+    for (let z = -6; z <= -3; z++) { s.put(0, 1, z, 'table'); s.put(-1, 1, z, 'chair', 1); s.put(1, 1, z, 'chair', 3); }
+    s.put(0, 2, -5, 'candles'); s.put(0, 2, -3, 'candles');
+    s.put(0, 1, -7, 'throne', 0); s.put(-4, 1, -4, 'fireplace', 1); s.put(4, 1, -6, 'bookshelf', 3); s.put(4, 1, -5, 'bookshelf', 3);
+    for (let x = -1; x <= 1; x++) s.put(x, 1, -1, 'rug');
+    // second floor: bedrooms
+    s.put(-3, 6, -7, 'bed', 0); s.put(3, 6, -7, 'bed', 0); s.put(-3, 6, -5, 'chest', 0); s.put(3, 6, -5, 'chest', 0);
+    s.put(0, 6, -7, 'fireplace', 0); s.put(-4, 6, -2, 'bookshelf', 1); s.put(2, 6, -2, 'flowers'); s.put(0, 6, -3, 'rug');
+    // third floor: the storeroom
+    for (const [x, z] of [[-4, -7], [-3, -7], [-4, -6], [4, -7], [4, -1], [3, -1]]) s.put(x, 10, z, 'barrel');
+    s.put(0, 10, -7, 'chest', 0); s.put(-4, 10, -2, 'table'); s.put(-4, 11, -2, 'candles');
+
+    // courtyard: a fountain, trees, flowers and torches
+    for (let x = -1; x <= 1; x++) for (let z = 5; z <= 7; z++) s.put(x, 1, z, x === 0 && z === 6 ? 'water' : 'cobble');
+    for (const [x, z] of [[-7, 6], [7, 6], [-8, -9], [8, -9], [-8, 3], [8, 3]]) s.put(x, 1, z, 'tree');
+    for (const [x, z] of [[-3, 4], [3, 4], [-6, -2], [6, -2]]) s.put(x, 1, z, 'flowers');
+    for (const [x, z] of [[-1, 1], [1, 1], [-2, 9], [2, 9]]) s.put(x, 1, z, 'torch');
+    // trees outside the moat, and farther out
+    for (const [x, z] of [[-18, -17], [17, -18], [-18, 6], [18, -4], [-6, 18], [7, 18], [18, 17], [-17, 17],
+      [-26, -22], [25, -27], [-28, 18], [27, 22], [-5, -28], [-27, -6], [28, 4], [6, 27], [-35, 30], [36, -12], [12, -38], [-38, -32]]) base.put(x, 0, z, 'tree');
+    return { blocks: base.list(), dug: holes };
   }
 
   /* ---------- landmarks: famous places built from ordinary blocks ---------- */
@@ -1446,8 +1701,11 @@
   const LANDMARKS = [
     { id: 'pyramid', name: 'Pyramid', called: 'the Great Pyramid', where: 'The Great Pyramid is in Giza, Egypt.',
       build(s) {
-        for (let y = 0; y <= 7; y++) s.square(7 - y, y, y === 7 ? 'gold' : 'sand');
-        s.put(0, 0, 7, 'gate', 0); // the way in
+        for (let y = 0; y <= 7; y++) {
+          s.square(7 - y, y, y === 7 ? 'gold' : 'sand');
+          if (7 - y >= 2) s.square(6 - y, y, 'stone'); // hidden stone that holds up the sand above (sand falls)
+        }
+        s.put(0, 0, 7, 'gate', 0); s.del(0, 0, 6); s.put(0, 1, 6, 'stone'); // the way in, with a stone above it
         s.put(0, 0, 0, 'chest', 0); s.put(-1, 0, -1, 'gold'); s.put(1, 0, -1, 'gold'); s.put(0, 1, -1, 'gold'); // treasure inside
       } },
     { id: 'eiffel', name: 'Eiffel Tower', called: 'the Eiffel Tower', where: 'The Eiffel Tower is in Paris, France.',
@@ -1596,7 +1854,12 @@
     LANDMARK[l.id] = l;
   }
   // The tray shows pieces and landmarks; only pieces are ever saved.
-  const TILES = PIECES.concat(LANDMARKS.map((l) => ({ id: l.id, name: l.name, cat: 'landmarks', landmark: l })));
+  const TILES = [];
+  for (const p of PIECES) {
+    if (p.id === 'grass') TILES.push({ id: 'dig', name: 'Dig', cat: 'nature', tool: true }); // a shovel: tap the ground to dig a hole
+    TILES.push(p);
+  }
+  TILES.push(...LANDMARKS.map((l) => ({ id: l.id, name: l.name, cat: 'landmarks', landmark: l })));
   const TILE = Object.fromEntries(TILES.map((p) => [p.id, p]));
   function turnXZ(x, z, r) { return r === 1 ? [z, -x] : r === 2 ? [-x, -z] : r === 3 ? [-z, x] : [x, z]; } // matches pieceYaw
   function turnRot(t, br, r) { return FACE4.has(t) ? (br + r) % 4 : FACE2.has(t) ? (br + r) % 2 : br; }
@@ -1807,15 +2070,15 @@
   const NOSTAND = new Set(['water', 'lava', 'roof', 'flag', 'torch', 'tree', 'fence', 'lantern', 'door',
     'table', 'chair', 'bench', 'throne', 'candles', 'flowers', 'rug']);
   const PASS = new Set(['gate', 'door', 'rug']);
-  const passable = (x, y, z) => { const b = world.get(K(x, y, z)); return !b || PASS.has(b.t); };
-  const supported = (x, y, z) => { if (y === 0) return true; const b = world.get(K(x, y - 1, z)); return !!b && !NOSTAND.has(b.t); };
+  const passable = (x, y, z) => { if (isEarth(x, y, z)) return false; const b = world.get(K(x, y, z)); return !b || PASS.has(b.t); };
+  const supported = (x, y, z) => { if (isEarth(x, y - 1, z)) return true; const b = world.get(K(x, y - 1, z)); return !!b && !NOSTAND.has(b.t); };
   const canStand = (x, y, z) => inBounds(x, y, z) && passable(x, y, z) && supported(x, y, z);
   function footY(x, y, z) {
-    const below = y > 0 && world.get(K(x, y - 1, z)), here = world.get(K(x, y, z));
+    const below = world.get(K(x, y - 1, z)), here = world.get(K(x, y, z));
     return (below && TOP[below.t] ? y - 1 + TOP[below.t] : y) + (here && here.t === 'rug' ? 0.025 : 0);
   }
   function findStand(x, y, z) {
-    for (let yy = Math.min(y, MAXY - 1); yy >= 0; yy--) if (canStand(x, yy, z)) return yy;
+    for (let yy = Math.min(y, MAXY - 1); yy >= -DEPTH; yy--) if (canStand(x, yy, z)) return yy;
     for (let yy = y + 1; yy < MAXY; yy++) if (canStand(x, yy, z)) return yy;
     return -1;
   }
@@ -1875,8 +2138,8 @@
     for (const e of (list || [])) addChar(e[0], e[1], e[2], e[3]);
   }
   function sampleChars() {
-    return [['knight', 0, 0, 3], ['knight', 2, 0, 6], ['queen', -2, 0, 2], ['sheep', 9, 0, 6], ['sheep', 10, 0, 8], ['sheep', -9, 0, 7],
-      ['chicken', -3, 0, -1], ['chicken', 3, 0, 1], ['cat', 2, 0, -2], ['dragon', 0, 0, 0]];
+    return [['knight', 0, 0, 8], ['knight', 0, 0, 18], ['queen', 0, 0, 3], ['sheep', -18, 0, 2], ['sheep', -17, 0, 9], ['sheep', 19, 0, -8],
+      ['chicken', -5, 0, 6], ['chicken', 5, 0, 7], ['cat', 2, 0, -2], ['dragon', 0, 12, -4]];
   }
   function starterChars() { // the sample cast, set down on whatever is built there
     const out = [];
@@ -1959,6 +2222,7 @@
     store.set(CHARS_KEY, JSON.stringify(serializeChars()));
     store.set(NIGHT_KEY, nightTarget === 1 ? '1' : '0');
     store.set(ISLAND_KEY, String(half * 2));
+    store.set(DUG_KEY, JSON.stringify(serializeDug()));
   }
   function changed() {
     refreshUI();
@@ -2010,7 +2274,7 @@
   const MARKER = 'needs-newer-game';
   function fromNewerGame(d) {
     if (!d || !Array.isArray(d.pieces) || !Array.isArray(d.cells)) return false;
-    if ((typeof d.v === 'number' && d.v > 4) || (typeof d.island === 'number' && d.island > MAX_HALF * 2)) return true;
+    if ((typeof d.v === 'number' && d.v > 5) || (typeof d.island === 'number' && d.island > MAX_HALF * 2)) return true;
     for (let i = 3; i < d.cells.length; i += 5) { const id = d.pieces[d.cells[i]]; if (typeof id === 'string' && !PIECE[id] && id !== MARKER) return true; }
     if (!Array.isArray(d.charKinds) || !Array.isArray(d.chars)) return false;
     for (let i = 0; i < d.chars.length; i += 4) { const k = d.charKinds[d.chars[i]]; if (typeof k === 'string' && !CHAR_SET.has(k)) return true; }
@@ -2027,8 +2291,9 @@
     for (const b of world.values()) cells.push(b.x, b.y, b.z, at.get(b.t), b.r || 0);
     cells.push(0, 0, 0, ids.length - 1, 0); // the marker (see MARKER)
     for (const c of serializeChars()) cs.push(CHAR_IDS.indexOf(c[0]), c[1], c[2], c[3]);
-    return { v: 4, island: half * 2, pieces: ids, cells, charKinds: CHAR_IDS, chars: cs, night: nightTarget === 1, savedAt: Date.now(), writer: TAB };
+    return { v: 5, island: half * 2, dug: serializeDug(), pieces: ids, cells, charKinds: CHAR_IDS, chars: cs, night: nightTarget === 1, savedAt: Date.now(), writer: TAB };
   }
+  const decodeDug = (d) => (d && validDug(d.dug) ? d.dug : []); // holes (version 5 and later)
   function decodeCastle(d) {
     if (!d || !Array.isArray(d.pieces) || !Array.isArray(d.cells) || d.cells.length % 5) return null;
     const out = [];
@@ -2044,9 +2309,10 @@
     for (let i = 0; i < d.chars.length; i += 4) out.push([d.charKinds[d.chars[i]], d.chars[i + 1], d.chars[i + 2], d.chars[i + 3]]);
     return validChars(out) ? out : [];
   }
-  function sameAsWorld(list, charList, width) {
+  function sameAsWorld(list, charList, width, dugList) {
     const kinds = (a) => a.map((c) => c[0]).sort().join(',');
-    if (width > 0 && islandFor(list, charList, width) !== half) return false;
+    if (width > 0 && islandFor(list, charList, width, dugList) !== half) return false;
+    if (dugList && (dugList.length / 3 !== dug.size || !dugList.every((v, i) => i % 3 || dug.has(K(v, dugList[i + 1], dugList[i + 2]))))) return false;
     if (charList && kinds(charList) !== kinds(serializeChars())) return false;
     if (list.length !== world.size) return false;
     return list.every((e) => { const b = world.get(K(e[0], e[1], e[2])); return !!b && b.t === e[3] && (b.r || 0) === (e[4] || 0); });
@@ -2092,8 +2358,9 @@
     }
   }
   function applyRemote(list, d) {
-    const charList = Array.isArray(d.chars) ? decodeChars(d) : null;
-    setIsland(islandFor(list, charList || serializeChars(), d.island), true);
+    const charList = Array.isArray(d.chars) ? decodeChars(d) : null, holes = decodeDug(d);
+    setIsland(islandFor(list, charList || serializeChars(), d.island, holes), true);
+    loadDug(holes);
     loadBlocks(list, false);
     if (charList) loadChars(charList);
     undoStack.length = 0;
@@ -2110,10 +2377,12 @@
       else if (a.op === 'addChar') addChar(a.kind, a.x, a.y, a.z);
       else if (a.op === 'many') for (const e of a.list) addBlock(e[0], e[1], e[2], e[3], e[4]);
       else if (a.op === 'island' && a.to > half) setIsland(a.to, true);
+      else if (a.op === 'dig') digAt(a.x, a.y, a.z);
+      redoNature(a);
     }
   }
   function useAccountCastle(list, d, ops, undoable) {
-    const before = undoable ? { blocks: serialize(), chars: serializeChars(), island: half * 2 } : null;
+    const before = undoable ? { blocks: serialize(), chars: serializeChars(), island: half * 2, dug: serializeDug() } : null;
     applyRemote(list, d);
     if (before) pushUndo({ op: 'bulk', before });
     if (ops.length) { replayOps(ops); store.set(AT_KEY, String(Date.now())); saveLocal(); }
@@ -2129,7 +2398,7 @@
     const list = decodeCastle(d);
     if (!list) { scheduleCloudSave(0); return; }
     const charList = Array.isArray(d.chars) ? decodeChars(d) : null;
-    if (sameAsWorld(list, charList, d.island)) {
+    if (sameAsWorld(list, charList, d.island, d.v >= 5 ? decodeDug(d) : null)) {
       if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
       const needUpgrade = !Array.isArray(d.chars) && chars.length > 0;
       if (ops.length || cloud.pending || needUpgrade) scheduleCloudSave(0); else setSave('saved');
@@ -2190,7 +2459,7 @@
     if (cloud.pending || cloud.inFlight) return; // this device's newer edits will win
     const list = decodeCastle(d);
     if (!list) return;
-    if (!sameAsWorld(list, Array.isArray(d.chars) ? decodeChars(d) : null, d.island)) applyRemote(list, d); // live update from another device
+    if (!sameAsWorld(list, Array.isArray(d.chars) ? decodeChars(d) : null, d.island, decodeDug(d))) applyRemote(list, d); // live update from another device
     else if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
     setSave('saved');
   }
@@ -2282,13 +2551,15 @@
     });
   }
   function pushUndo(a) {
+    a.effects = []; a.budget = 600; a.live = true; // for what nature does next (see "nature")
     undoStack.push(a);
     if (undoStack.length > 300) undoStack.shift();
     if (cloud.earlyOps) cloud.earlyOps.push(a);
   }
-  function bulk(list, animate, charList, width) { // replace the whole castle (width: its island, or keep this one)
-    const before = { blocks: serialize(), chars: serializeChars(), island: half * 2 };
-    setIsland(islandFor(list, charList, width || half * 2), true);
+  function bulk(list, animate, charList, width, dugList) { // replace the whole castle (width: its island, or keep this one)
+    const before = { blocks: serialize(), chars: serializeChars(), island: half * 2, dug: serializeDug() };
+    setIsland(islandFor(list, charList, width || half * 2, dugList), true);
+    loadDug(dugList || []);
     loadBlocks(list, animate);
     loadChars(charList || []);
     pushUndo({ op: 'bulk', before });
@@ -2297,16 +2568,19 @@
   function undo() {
     const a = undoStack.pop();
     if (!a) return;
+    undoNature(a);
     if (a.op === 'add') removeBlock(a.x, a.y, a.z);
     else if (a.op === 'remove') addBlock(a.x, a.y, a.z, a.t, a.r, { pop: true });
     else if (a.op === 'addChar') { const c = chars.find((q) => q.id === a.id); if (c) removeChar(c); }
     else if (a.op === 'removeChar') addChar(a.kind, a.x, a.y, a.z, { pop: true });
     else if (a.op === 'bulk') {
-      setIsland(islandFor(a.before.blocks, a.before.chars, a.before.island), true);
+      setIsland(islandFor(a.before.blocks, a.before.chars, a.before.island, a.before.dug), true);
+      loadDug(a.before.dug || []);
       loadBlocks(a.before.blocks, false); loadChars(a.before.chars);
     }
     else if (a.op === 'many') for (const e of a.list) removeBlock(e[0], e[1], e[2]);
-    else if (a.op === 'island') setIsland(islandFor(serialize(), null, a.from * 2), true);
+    else if (a.op === 'island') setIsland(islandFor(serialize(), null, a.from * 2, serializeDug()), true);
+    else if (a.op === 'dig') fillAt(a.x, a.y, a.z);
     changed();
     blip('undo');
     refreshGhost();
@@ -2326,7 +2600,11 @@
         remove: ['sine', 200, 480, 0.18, 0.14],
         undo: ['sine', 420, 260, 0.12, 0.12],
         snap: ['square', 1500, 500, 0.06, 0.08],
-        grow: ['sine', 180, 540, 0.2, 0.6]
+        grow: ['sine', 180, 540, 0.2, 0.6],
+        splash: ['sine', 700, 180, 0.12, 0.3],
+        hiss: ['sawtooth', 1200, 300, 0.035, 0.35],
+        thud: ['triangle', 140, 70, 0.2, 0.12],
+        dig: ['triangle', 260, 90, 0.22, 0.16]
       }[kind] || ['sine', 300, 200, 0.1, 0.1];
       o.type = spec[0];
       o.frequency.setValueAtTime(spec[1], t);
@@ -2491,7 +2769,7 @@
   document.addEventListener('pointerdown', (e) => {
     if (!menu.hidden && !menu.contains(e.target) && !moreBtn.contains(e.target)) openMenu(false);
   });
-  $('#m-sample').addEventListener('click', () => { bulk(sampleCastle(), true, sampleChars()); openMenu(false); resetView(); });
+  $('#m-sample').addEventListener('click', () => { const w = sampleWorld(); bulk(w.blocks, true, sampleChars(), 0, w.dug); openMenu(false); resetView(); });
   $('#m-view').addEventListener('click', () => { resetView(); openMenu(false); });
 
   /* bigger island */
@@ -2516,6 +2794,14 @@
     controls.autoRotate = !controls.autoRotate;
     $('#spin-state').textContent = controls.autoRotate ? 'On' : 'Off';
   });
+  $('#m-nature').addEventListener('click', () => {
+    nature.on = !nature.on;
+    store.set(NATURE_KEY, nature.on ? 'on' : 'off');
+    $('#nature-state').textContent = nature.on ? 'On' : 'Off';
+    if (!nature.on) nature.queue.clear();
+    toast(nature.on ? 'Nature is on: water flows, lava cools into rock, ice and snow melt, and sand falls.' : 'Nature is off: blocks stay right where you put them.');
+  });
+  $('#nature-state').textContent = nature.on ? 'On' : 'Off';
   $('#m-sound').addEventListener('click', () => {
     soundOn = !soundOn;
     store.set(SOUND_KEY, soundOn ? 'on' : 'off');
@@ -2564,7 +2850,7 @@
     if (fromNewerGame(d)) { toast('This castle was made with a newer version of the game. Reload the page, then open it again.'); return; }
     const list = decodeCastle(d);
     if (!list) { toast('That file is not a Stack-a-Castle save'); return; }
-    bulk(list, true, Array.isArray(d.chars) ? decodeChars(d) : [], d.island);
+    bulk(list, true, Array.isArray(d.chars) ? decodeChars(d) : [], d.island, decodeDug(d));
     if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
     resetView();
     toast('Castle loaded. Undo puts the old one back.');
@@ -2682,7 +2968,7 @@
   const ndc = new THREE.Vector2();
   // Walks the ray square by square through the island's grid (a "voxel walk") until it meets a
   // block or the grass. This costs the same for 10 blocks or 10,000.
-  const LO = [-half, 0, -half], HI = [half, MAXY, half]; // updated by setIsland
+  const LO = [-half, -DEPTH, -half], HI = [half, MAXY, half]; // x and z are updated by setIsland
   function pickCell(ray) {
     const O = [ray.origin.x, ray.origin.y, ray.origin.z], D = [ray.direction.x, ray.direction.y, ray.direction.z];
     let t0 = 0, t1 = Infinity, axis = -1;
@@ -2704,16 +2990,23 @@
     }
     let face = axis, t = t0;
     for (let i = 0, n = half * 4 + MAXY + 8; i < n; i++) {
-      if (world.has(K(cell[0], cell[1], cell[2]))) {
+      const solid = world.has(K(cell[0], cell[1], cell[2])), earth = !solid && isEarth(cell[0], cell[1], cell[2]);
+      if (solid || earth) { // a block, or the ground (which can be dug)
         if (face < 0) return null; // the camera is inside a block
         const n = [0, 0, 0]; n[face] = -step[face];
-        return { place: { x: cell[0] + n[0], y: cell[1] + n[1], z: cell[2] + n[2] }, remove: { x: cell[0], y: cell[1], z: cell[2] }, dist: t };
+        const at = { x: cell[0], y: cell[1], z: cell[2] }, place = { x: cell[0] + n[0], y: cell[1] + n[1], z: cell[2] + n[2] };
+        let dig = earth ? at : null;
+        // tapping the wall of a hole digs the hole deeper (the square under where you're looking), not sideways
+        if (earth && face !== 1 && place.y < 0) {
+          let y = place.y - 1;
+          while (y >= -DEPTH && !isEarth(place.x, y, place.z)) y--;
+          if (y >= -DEPTH) dig = { x: place.x, y, z: place.z };
+        }
+        return { place, remove: solid ? at : null, dig, dist: t };
       }
       const a = tMax[0] < tMax[1] ? (tMax[0] < tMax[2] ? 0 : 2) : (tMax[1] < tMax[2] ? 1 : 2);
       t = tMax[a]; tMax[a] += tDelta[a]; cell[a] += step[a]; face = a;
-      if (cell[a] < LO[a] || cell[a] >= HI[a]) {
-        return a === 1 && step[1] < 0 ? { place: { x: cell[0], y: 0, z: cell[2] }, remove: null, dist: t } : null; // the grass
-      }
+      if (cell[a] < LO[a] || cell[a] >= HI[a]) return null;
     }
     return null;
   }
@@ -2727,8 +3020,8 @@
     return res;
   }
   function charTarget(c) {
-    if (!inBounds(c.x, Math.max(0, c.y), c.z)) return -1;
-    return selected === 'dragon' ? Math.max(0, c.y) : findStand(c.x, Math.max(0, c.y), c.z);
+    if (!inBounds(c.x, c.y, c.z)) return -1;
+    return selected === 'dragon' ? Math.max(0, c.y) : findStand(c.x, c.y, c.z);
   }
   function facingRot() {
     const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
@@ -2748,17 +3041,23 @@
       return;
     }
     if (mode === 'erase' || forceErase) {
-      if (p.remove && removeBlock(p.remove.x, p.remove.y, p.remove.z, { record: true })) { blip('remove'); changed(); hideHint(); }
+      if (p.remove && removeBlock(p.remove.x, p.remove.y, p.remove.z, { record: true })) {
+        natureAfter([[p.remove.x, p.remove.y, p.remove.z]]);
+        blip('remove'); changed(); hideHint();
+      }
+    } else if (selected === 'dig') {
+      if (p.dig && digAt(p.dig.x, p.dig.y, p.dig.z, { record: true })) { natureAfter([[p.dig.x, p.dig.y, p.dig.z]]); blip('dig'); changed(); hideHint(); }
     } else if (LANDMARK[selected]) {
-      if (placeLandmark(LANDMARK[selected], p.place, facing4())) { fanfare(); changed(); hideHint(); }
+      if (placeLandmark(LANDMARK[selected], p.place, facing4())) { natureAfter(undoStack[undoStack.length - 1].list); fanfare(); changed(); hideHint(); }
     } else if (CHAR_SET.has(selected)) {
       if (chars.length >= MAX_CHARS) { toast('One island can hold up to ' + MAX_CHARS + ' characters'); return; }
       const c = p.place, y = charTarget(c);
       if (y >= 0 && addChar(selected, c.x, y, c.z, { record: true, pop: true })) { voice(selected); changed(); hideHint(); }
     } else {
       const c = p.place;
-      if (inBounds(c.x, c.y, c.z) && !world.has(K(c.x, c.y, c.z))) {
+      if (canHold(c.x, c.y, c.z) && !world.has(K(c.x, c.y, c.z))) {
         addBlock(c.x, c.y, c.z, selected, rotFor(selected), { record: true, pop: true });
+        natureAfter([[c.x, c.y, c.z]]);
         blip('place'); changed(); hideHint();
       }
     }
@@ -2767,6 +3066,7 @@
   function updateGhost(clientX, clientY) {
     const p = pick(clientX, clientY);
     if (!p || p.char) { ghost.visible = false; return; }
+    if (mode !== 'erase' && selected === 'dig') { if (p.dig) showGhost(p.dig, 'erase'); else ghost.visible = false; return; }
     if (mode !== 'erase' && LANDMARK[selected]) {
       const spot = landmarkSpot(LANDMARK[selected], p.place, facing4());
       showGhostBox(spot.min, spot.max, spot.ok);
@@ -2781,7 +3081,7 @@
       if (p.remove) showGhost(p.remove, 'erase'); else ghost.visible = false;
     } else {
       const c = p.place;
-      if (inBounds(c.x, c.y, c.z) && !world.has(K(c.x, c.y, c.z))) showGhost(c, 'build'); else ghost.visible = false;
+      if (canHold(c.x, c.y, c.z) && !world.has(K(c.x, c.y, c.z))) showGhost(c, 'build'); else ghost.visible = false;
     }
   }
   function refreshGhost() { if (lastMouse) updateGhost(lastMouse.x, lastMouse.y); else ghost.visible = false; }
@@ -2930,6 +3230,8 @@
       shownHalf = Math.abs(d) <= step ? half : shownHalf + Math.sign(d) * step;
       sizeIsland(shownHalf);
     }
+    if (nature.queue.size || nature.dirty) natureStep(performance.now());
+    if (pitsDirty) buildPits();
     if (clearDirty) buildClear(); else sortClear(false);
     updateChars(dt, t);
     renderer.render(scene, camera);
@@ -2948,12 +3250,15 @@
       const raw = store.get(SAVE_KEY);
       if (raw) { try { const parsed = JSON.parse(raw); if (validList(parsed)) blocks = parsed; } catch (e) { /* ignore */ } }
     }
-    if (!blocks) blocks = sampleCastle();
+    let holes = [];
+    try { const h = JSON.parse(store.get(DUG_KEY) || '[]'); if (validDug(h)) holes = h; } catch (e) { /* ignore */ }
+    if (!blocks) { const w = sampleWorld(); blocks = w.blocks; holes = w.dug; }
     if (!charList) {
       const rawC = store.get(CHARS_KEY);
       if (rawC) { try { const pc = JSON.parse(rawC); if (validChars(pc)) charList = pc; } catch (e) { /* ignore */ } }
     }
-    setIsland(islandFor(blocks, charList, Number(store.get(ISLAND_KEY)) || 0)); // older saves get the new, bigger starting island
+    setIsland(islandFor(blocks, charList, Number(store.get(ISLAND_KEY)) || 0, holes)); // older saves get the new, bigger starting island
+    loadDug(holes);
     loadBlocks(blocks, false);
     if (!charList) { charList = starterChars(); }
     loadChars(charList);

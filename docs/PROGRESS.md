@@ -1,10 +1,10 @@
 # Project progress
 
-_Last updated: 27 Nov 2026 · Current version: **v1.3.0**_
+_Last updated: 27 Nov 2026 · Current version: **v1.3.1**_
 
 ## Where things stand
 
-**v1.3.0 is live** (27 Nov 2026): islands start at 300 × 300 and can grow to 1000 × 1000 from the ⋯ menu. It is the first part of **v1.3, "A bigger, livelier island"**; the rest (new and smarter characters, more pieces, a day–night cycle, weather) comes next as v1.3 updates. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live too; two checks on real devices are still open (see **Next up**).
+**v1.3.1 is built** (27 Nov 2026): nature (water flows, lava cools, ice and snow melt, sand falls), a **Dig** tool, and a bigger sample castle with a real moat dug into the ground. It goes live when its pull request is merged. **v1.3.0** (islands start at 300 × 300 and grow to 1000 × 1000) is live. Both are part of **v1.3, "A bigger, livelier island"**; still to come in v1.3: new and smarter characters, more pieces, a day–night cycle and weather. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live too; two checks on real devices are still open (see **Next up**).
 
 v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file backups, and online with Google sign-in (Firebase), confirmed with a real Google sign-in on the live site.
 
@@ -12,6 +12,8 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 
 | Date | What changed |
 |---|---|
+| 27 Nov 2026 | **Nature** (v1.3.1): water, lava, ice, snow and sand follow simple rules after a player changes something nearby; one Undo takes back the change and its effects; **⋯ → Nature** turns it off. **Dig** tool for holes up to 3 deep, drawn with a grass mask and dirt walls. **New sample castle**: moat dug two deep and filled with water, gatehouse, four towers with turrets, a furnished three-story keep. The pyramid landmark got hidden stone so its sand doesn't fall. Save format v5 stores holes. |
+| 27 Nov 2026 | Tested (v1.3.1): each nature rule and its Undo, the Nature switch, a waterfall off a wall, digging with clicks (deeper, then sideways at the bottom), water running into holes, a hole dug beside the moat filling while building next to the moat doesn't spill it, reload, files, online saving (simulated Firebase), and the live v1.3.0 game refusing a v5 save. |
 | 27 Nov 2026 | **Bigger island:** starts at 300 × 300 (was 100 × 100) and grows from **⋯ → Bigger island** by 50 squares a side, up to 1000 × 1000; Undo shrinks it. Existing castles move over automatically. The rock and clouds scale with it, and the camera's near limit moves out when zoomed far out (this stopped stripes flickering on the grass). Save format v4 stores the size. |
 | 27 Nov 2026 | Tested: an old saved castle opening on the bigger island, building at the new edge, growing to the limit, Undo, reload, save to a file and open it, opening an old file, online saving (simulated Firebase), and the earlier checks. The live **v1.2** game was run against a v4 online save: it showed "Update needed" and did not overwrite it, both when the save was already there and when it arrived live. |
 
@@ -51,7 +53,7 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 1. **Reload the game on every family device** (see the first known issue). Publish the GitHub releases for v1.1.0, v1.2.0 and v1.3.0 (this session can't push tags, so they are made on GitHub's Releases page).
 2. **Check on the oldest tablet:** open a big castle (about 2,000 blocks, 20 characters) and see that spinning and building feel smooth. This finishes v1.1's "done when".
 3. **Check live sync:** sign in on two devices, build on one, and watch the other update.
-4. Then the rest of **v1.3, "A bigger, livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle, weather, and nature effects (water flowing into holes, lava cooling into stone, ice and snow melting, sand falling).
+4. Then the rest of **v1.3, "A bigger, livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
 
 The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
 
@@ -59,6 +61,9 @@ The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0
 
 - **After an update, reload the game on every device.** A copy of v1.0 left open in a tab can't read newer castles, and its next save online could overwrite them. Reloading the page fixes it. (Versions 1.1 and later spot saves from a newer version, say "Update needed" and stop saving instead.)
 - **A huge island is mostly empty grass.** Getting around a 1000 × 1000 island takes a lot of panning (two fingers, or the right mouse button). Shadows are only drawn near the middle of the view.
+- **Old moats on flat ground can spill.** With Nature on, water placed on the grass spreads a few squares. A moat built on top of the grass in an older castle stays as it is until someone builds right next to it; then it can spill. Undo puts it back, or turn **⋯ → Nature** off. The new sample castle's moat is dug into the ground, so it stays put.
+- **Holes are at most 3 deep**, and characters that fall into a hole deeper than 1 can't climb out.
+- **Nature has limits:** water spreads at most 3 squares from where it started (lava 1), one action can set off at most 600 changes, and flowing water doesn't drain away when its source is removed.
 - **Landmarks need open space.** A landmark is only placed if all of it fits on the island; squares that already have a block are skipped, so it builds around what's there. Placing one on a tall building can push it over the height limit.
 - **Pieces placed on a rug or slab** sit a full block up, like in other block-building games. Candles, flowers and rugs are the exception: they sit down onto low furniture.
 - **Without signing in, saves live in one browser on one device.** Clearing site data deletes them. Sign in, or use **Save to a file**.
