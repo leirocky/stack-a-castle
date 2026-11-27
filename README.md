@@ -4,7 +4,7 @@ A 3D castle builder that runs in any web browser, on phones and computers. Stack
 
 **Play it:** https://leirocky.github.io/stack-a-castle/
 
-**Version 1.3.3** (27 Nov 2026) · [What's new](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
+**Version 1.3.4** (27 Nov 2026) · [What's new](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
 
 ![The sample castle: stone walls with battlements, four round towers with red roofs, a brick keep with a flag, a moat, and a dragon flying overhead](docs/screenshot.jpg)
 
@@ -29,18 +29,20 @@ A **How to play** card appears on the first visit. More options are in the **⋯
 
 ## What's in the game
 
-- **Castle (10):** stone, brick, window, gate, battlement, round tower, roof, flag, torch, gold
-- **Nature (11):** grass, dirt, sand, cobblestone, water, tree, log, leaves, snow, ice, lava
-- **Build (17):** wood, glass, slab, stairs, fence, door, lamp, lantern, seven colors, iron and clock
-- **Furniture (12):** table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench, barrel
+- **Castle (15):** stone, brick, window, gate, battlement, round tower, roof, flag, torch, gold, banners in red, blue, gold and green, arch
+- **Nature (12):** grass, dirt, sand, cobblestone, water, tree, log, leaves, snow, ice, lava, flower bed
+- **Build (19):** wood, glass, slab, stairs, fence, door, lamp, lantern, seven colors, iron, clock, bridge and ladder
+- **Furniture (13):** table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench, barrel, well
 - **Dig:** the shovel at the front of the Nature tab digs holes in the grass, up to 3 deep.
 - **Peek:** the eye button hides the floors above, one at a time, so you can look into rooms.
 - **Nature:** water runs downhill and fills holes, lava cools into stone when it meets water, ice and snow melt next to fire, and sand falls. It only starts from something you do, and **⋯ → Nature** turns it off.
 - **Landmarks (9):** the Great Pyramid, Eiffel Tower, Big Ben, Statue of Liberty, Leaning Tower of Pisa, Colosseum, Stonehenge, Great Wall and Moai. Tap the grass and the whole landmark pops up out of ordinary blocks, facing you. You can change any part of it, and one Undo takes it away.
-- **Characters (6):** knight, queen, sheep, chicken, cat, dragon. They wander, walk through gates and doors, walk around furniture and over rugs, climb one block at a time, and avoid water and lava. The dragon circles in the sky. Tap a character to make it jump and make its sound.
+- **Characters (10):** knight, queen, sheep, chicken, cat, dragon, horse, dog, owl, and a friendly ghost that only comes out at night. They wander and follow paths, walk through gates, doors and arches, climb stairs and ladders, and avoid water and lava. The knight, queen, cat and dog sit on chairs, benches and thrones, and sleep in beds at night; everyone else gathers around the torches and fireplaces. The dragon circles in the sky and lands on towers; the owl flies at night. Tap a character to make it jump and make its sound.
 - A 300 × 300 island that can grow to 1000 × 1000 (**⋯ → Bigger island**), blocks up to 32 high, up to 40 characters. Big castles (thousands of blocks) stay smooth.
+- Tap a door to open it; characters open doors as they walk through.
 - Gates, doors, fences, stairs and furniture turn to face you when placed. Candles, flowers and rugs sit down onto tables and other low furniture.
-- At night, windows, clocks, lamps, lanterns, torches, candles, fireplaces and lava glow.
+- At night, windows, clocks, lamps, lanterns, torches, candles, fireplaces and lava glow. **⋯ → Day and night** lets days go by on their own, with a sunrise and a sunset.
+- **⋯ → Weather:** clear, rain or snow.
 - **Save a picture** of your castle from the ⋯ menu.
 
 All textures, models and sounds are generated in code; the game has no image or audio files. The characters are original designs.

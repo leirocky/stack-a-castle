@@ -2,6 +2,44 @@
 
 All notable changes, newest first. Planned work is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## v1.3.4 — 27 Nov 2026
+
+The rest of v1.3: new friends, smarter friends, new pieces, doors that open, days that pass by themselves, and weather. With this, **v1.3 is complete**.
+
+**New characters** (all original designs)
+- A **horse** that trots slowly, a **dog** that scampers about, an **owl** that sits on its perch by day and flies circles at night, and a friendly **ghost** that only shows up after dark. All four live in the sample castle.
+
+**Smarter characters**
+- They follow paths: cobblestone, planks, bridges, rugs and stairs.
+- Now and then the knight, queen, cat and dog sit down on a chair, bench or throne.
+- At night the knight, queen, cat and dog go to bed if there is a free bed they can walk to. Everyone else gathers around a torch, fireplace, lamp, lantern or candles. In the morning they get up again.
+- Characters climb ladders: once they start up, they climb to the top and step off.
+- The dragon lands on top of towers and other high spots, rests, and takes off again.
+
+**New pieces**
+- **Castle:** an **arch** you can walk through, and **banners** in red, blue, gold and green that hang on walls.
+- **Nature:** a **flower bed**.
+- **Build:** a **bridge** with railings and a **ladder**.
+- **Furniture:** a **well** with a little roof and a bucket.
+- The sample castle has some of them: banners on the keep and the gatehouse, a well and flower beds in the courtyard.
+- New pieces were added at the end of each tab, so the number keys for the old pieces haven't changed.
+
+**Doors open** (asked for by the family)
+- Tap a door to open it: it swings open on its hinge with a creak. Tap it again to close it.
+- Characters open doors as they walk through, and the door closes behind them.
+- Opening a door isn't saved and isn't an Undo step; doors are closed when the game starts. To build next to a door, tap the block beside it.
+
+**Day and night**
+- **⋯ → Day and night** makes days go by on their own: about two and a half minutes of day, a sunset, a minute and a half of night, and a sunrise. The sun crosses the sky, shadows swing round, and the sky glows orange at sunrise and sunset. It is off unless you turn it on.
+- With it on, the moon button skips ahead to the next sunset or sunrise.
+
+**Weather**
+- **⋯ → Weather** switches between clear, rain and snow. Rain greys the sky and, with sound on, makes a soft patter. Snow drifts down slowly.
+- Weather and the day–night switch are remembered on each device. They don't change the castle, so they don't affect saves.
+
+**Saves**
+- The save format is still version 5. A castle that uses the new pieces or characters can't be opened by an older copy of the game: it says to reload instead, and doesn't overwrite it.
+
 ## v1.3.3 — 27 Nov 2026
 
 Peek inside, and a much bigger castle to peek into.

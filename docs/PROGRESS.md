@@ -1,10 +1,10 @@
 # Project progress
 
-_Last updated: 27 Nov 2026 · Current version: **v1.3.3**_
+_Last updated: 27 Nov 2026 · Current version: **v1.3.4**_
 
 ## Where things stand
 
-**v1.3.3 is built** (27 Nov 2026): **Peek** (an eye button that shows one floor at a time) and a much bigger sample castle with rooms, doorways and stairs. It goes live when its pull request is merged. Live already: **v1.3.2** (the bridge and doorways fix), **v1.3.1** (nature, the **Dig** tool, a castle with a real moat) and **v1.3.0** (islands start at 300 × 300 and grow to 1000 × 1000). Both are part of **v1.3, "A bigger, livelier island"**; still to come in v1.3: new and smarter characters, more pieces, a day–night cycle and weather. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live too; two checks on real devices are still open (see **Next up**).
+**v1.3.4 is built** (27 Nov 2026) and finishes **v1.3, "A bigger, livelier island"**: four new characters (horse, dog, owl and a night-time ghost), smarter characters (paths, sitting, sleeping in beds, gathering by the fire, climbing ladders, the dragon landing on towers), six new pieces (arch, banners, flower bed, bridge, ladder, well), an optional day–night cycle with sunrise and sunset, and rain and snow. It goes live when its pull request is merged. Live already: **v1.3.3** (Peek and a bigger sample castle), **v1.3.2** (the bridge and doorways fix), **v1.3.1** (nature, the **Dig** tool, a castle with a real moat) and **v1.3.0** (islands start at 300 × 300 and grow to 1000 × 1000). **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live too; two checks on real devices are still open (see **Next up**).
 
 v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file backups, and online with Google sign-in (Firebase), confirmed with a real Google sign-in on the live site.
 
@@ -12,6 +12,8 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 
 | Date | What changed |
 |---|---|
+| 27 Nov 2026 | **The rest of v1.3** (v1.3.4). **New characters:** horse, dog, owl (perches by day, flies at night) and a friendly ghost that fades in after dark. **Smarter characters:** they prefer paths and follow them; the knight, queen, cat and dog sometimes sit on chairs, benches and thrones; at night they walk to a free bed and sleep (with a "Zzz"), and everyone else gathers around torches, fireplaces and candles (a bed or seat is kept for whoever is walking to it, so two don't head for the same one); they climb ladders; the dragon lands on high spots and takes off again. Trips use a short path search. **New pieces:** arch, four banners, flower bed, bridge, ladder and well, added at the end of their tabs; the sample castle has banners, a well and flower beds. **Doors open** (asked for during this work): tap a door and it swings open on a hinge; tap again to close; characters open doors on their way through and they close behind them. **⋯ → Day and night** runs a five-minute day with a sunset and sunrise (orange sky, the sun crossing the sky). **⋯ → Weather**: clear, rain (with a soft patter when sound is on) or snow. |
+| 27 Nov 2026 | Tested (v1.3.4) in a headless browser: a night and a day of character behavior stepped by hand (over three nights the queen, cat and dog each got a bed in the keep; knights, chickens and the horse by the torches; sitting by day), every new piece placed and photographed, a door opened and closed with a real click (no block placed, no Undo step, closed again after reload), a knight walking through a door (it opens, then shuts behind them), a knight climbing a ladder to the top and back down, sunset, sunrise, rain, snow and snow at night, the moon button while the cycle runs, a full cycle, reload (pieces, switches), and the earlier checks. |
 | 27 Nov 2026 | **Peek** (v1.3.3): an eye button cuts away everything above one floor at a time (a clipping plane on all block materials), and the camera glides to look down into the rooms. **Bigger sample castle**: 31 × 31 walls, a 19 × 13 keep with three rooms on each of the lower floors, doorways, and stairs up to the roof. Big castles rise out of the ground when built. Fixed: on a first visit the queen and cat started on the keep's roof and the dragon flew through it; characters couldn't be placed one square down in a hole. Tested: a walk test reaching every room and floor on foot, each Peek level, building while peeking, phone width, and the earlier checks. |
 | 27 Nov 2026 | **Fix** (v1.3.2): the sample castle's bridge was a raised box that hid the gate, and its doorways were small arches. The bridge is now level with the grass, and the gatehouse and keep have open doorways two high with arches on top. Checked that a character can walk from the path, over the bridge and through the gate into the keep's hall. |
 | 27 Nov 2026 | **Nature** (v1.3.1): water, lava, ice, snow and sand follow simple rules after a player changes something nearby; one Undo takes back the change and its effects; **⋯ → Nature** turns it off. **Dig** tool for holes up to 3 deep, drawn with a grass mask and dirt walls. **New sample castle**: moat dug two deep and filled with water, gatehouse, four towers with turrets, a furnished three-story keep. The pyramid landmark got hidden stone so its sand doesn't fall. Save format v5 stores holes. |
@@ -55,7 +57,7 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 1. **Reload the game on every family device** (see the first known issue). Publish the GitHub releases for v1.1.0, v1.2.0 and v1.3.0 (this session can't push tags, so they are made on GitHub's Releases page).
 2. **Check on the oldest tablet:** open a big castle (about 2,000 blocks, 20 characters) and see that spinning and building feel smooth. This finishes v1.1's "done when".
 3. **Check live sync:** sign in on two devices, build on one, and watch the other update.
-4. Then the rest of **v1.3, "A bigger, livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
+4. Then **v1.4, "Many castles"**: keep several named castles and switch between them.
 
 The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
 
@@ -74,7 +76,10 @@ The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0
 - **Sign-in popups:** if a browser blocks the Google popup, the game falls back to a full-page redirect. Safari's privacy settings can make that redirect fail; allowing popups for the site fixes it.
 - **Performance:** big castles are now drawn in batches. It has not been timed on a real old tablet yet (see **Next up**). Torches, candles and fireplaces are still drawn one by one, so hundreds of them would cost more.
 - **Glass and ice:** they no longer glitch with each other. Other see-through things (the build cursor, glow at night) can still overlap them slightly wrongly from some angles.
-- **Characters** walk in four directions, step up at most one block, and drop at most two. Characters placed on a very tall build stay up there. The dragon only flies in circles.
+- **Characters** walk in four directions, step up at most one block, and drop at most two. Characters placed on a very tall build stay up there. They only look for a bed, seat or fire within about 14 squares they can walk to; a bed or seat across the castle is too far.
+- **Tapping a door opens it** instead of building against it. To build next to a door, tap the block beside it. Doors are always closed when the game starts.
+- **Weather is just for looks.** Rain doesn't fill holes or put out torches, and snow doesn't pile up.
+- **Day and night with the cycle on** isn't the same on every device: each device runs its own clock.
 - **Older saves** (from before characters existed) load with a starter set of characters.
 - **Two copies exist:** this repo is the source of truth. The Claude artifact version is an earlier copy that saves to a Claude account; changes here are not copied there automatically. To move a castle across, use **Save to a file** in one and **Open a saved file** in the other.
 
