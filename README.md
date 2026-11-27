@@ -84,5 +84,5 @@ The game uses [Three.js](https://threejs.org/) r128 from the jsDelivr CDN, [Fire
 ## Status
 
 - **[docs/PROGRESS.md](docs/PROGRESS.md):** where things stand right now, known issues and decisions
-- **[docs/ROADMAP.md](docs/ROADMAP.md):** future milestones, from v1.4 (a livelier island) to v3.0 (build together)
+- **[docs/ROADMAP.md](docs/ROADMAP.md):** future milestones, from v1.3 (a bigger, livelier island) to v3.0 (build together)
 - **[CHANGELOG.md](CHANGELOG.md):** what's in each released version

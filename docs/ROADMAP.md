@@ -9,9 +9,8 @@ This lists planned milestones in order. Each one has a goal, what's in it, and h
 | [v1.0](#v10--the-castle-builder-released) | The castle builder | ✅ Released 26 Nov 2026 |
 | [v1.1](#v11--smooth-and-solid) | Smooth and solid (plus furniture) | ✅ Built 26 Nov 2026 · two checks on real devices left |
 | [v1.2](#v12--landmarks-released) | Landmarks | ✅ Released 26 Nov 2026 |
-| [v1.3](#v13--a-bigger-island-released) | A bigger island | ✅ Built 27 Nov 2026 |
-| [v1.4](#v14--a-livelier-island) | A livelier island | 🔜 Next |
-| [v1.5](#v15--many-castles) | Many castles | Planned |
+| [v1.3](#v13--a-bigger-livelier-island) | A bigger, livelier island | 🚧 In progress · bigger island live (v1.3.0) |
+| [v1.4](#v14--many-castles) | Many castles | Planned |
 | [v2.0](#v20--quests-and-challenges) | Quests and challenges | Planned |
 | [v3.0](#v30--build-together) | Build together | Idea |
 
@@ -55,33 +54,24 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 
 **Done when:** each landmark can be placed, changed block by block, undone in one step, and saved like any castle.
 
-## v1.3 — A bigger island (released)
+## v1.3 — A bigger, livelier island
 
-**Goal:** room for landmarks and big builds, asked for by the family. (The milestones after this one each moved down one number again.)
-
-| Item | Size |
-|---|---|
-| ✅ Islands start at 300 × 300 instead of 100 × 100; existing castles move over automatically | S |
-| ✅ **Bigger island** in the ⋯ menu: grows by 50 squares on every side, up to 1000 × 1000, and Undo shrinks it | M |
-| ✅ Save format v4 stores the island size, with a guard so older copies of the game don't overwrite a bigger island | S |
-
-**Done when:** an existing castle opens on the bigger island, the island can grow to 1000 × 1000 and back, and the size is kept on the device, in files and online.
-
-## v1.4 — A livelier island
-
-**Goal:** more to build and more going on around the castle.
+**Goal:** room for landmarks and big builds, more to build, and more going on around the castle. The bigger island came first, at the family's request (v1.3.0); the rest ships as v1.3 updates.
 
 | Item | Size |
 |---|---|
+| ✅ Islands start at 300 × 300 instead of 100 × 100; existing castles move over automatically (v1.3.0) | S |
+| ✅ **Bigger island** in the ⋯ menu: grows by 50 squares on every side, up to 1000 × 1000, and Undo shrinks it (v1.3.0) | M |
+| ✅ Save format v4 stores the island size, with a guard so older copies of the game don't overwrite a bigger island (v1.3.0) | S |
 | New characters, all original designs: horse, dog, owl, and a friendly ghost that only appears at night | M |
 | Smarter characters: follow paths, sit on benches, chairs and thrones, sleep in beds at night, gather around torches and fireplaces; the dragon lands on towers | M |
 | New pieces: arch, bridge, ladder, well, banner (in colors), flower bed (the bench arrived early, in v1.1's Furniture tab) | M |
 | Automatic day–night cycle (optional), with a sunrise and sunset | S |
 | Weather: rain and snow you can turn on | S |
 
-**Done when:** the new pieces and characters are in their tabs, characters visibly use paths and benches, and weather and the cycle can be switched on and off.
+**Done when:** an existing castle opens on the bigger island, which can grow to 1000 × 1000 and back with the size kept everywhere (done); the new pieces and characters are in their tabs; characters visibly use paths and benches; and weather and the cycle can be switched on and off.
 
-## v1.5 — Many castles
+## v1.4 — Many castles
 
 **Goal:** keep several castles and pick which one to play.
 
@@ -131,4 +121,4 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 4. Commit and push to `main`.
 5. Create the release on GitHub: **Releases → Draft a new release → Choose a tag**, type the new tag (for example `v1.1.0`), pick **Create new tag on publish**, target `main`, use the version as the title, paste the changelog entry, and click **Publish release**. (From a terminal, `git tag -a v1.1.0 -m "v1.1.0" && git push origin v1.1.0` creates the tag too.)
 
-Version numbers: the **last** number goes up for fixes (1.0.0 → 1.0.1), the **middle** one for new features (1.0 → 1.1), and the **first** one for big changes to how the game is played (1.x → 2.0).
+Version numbers: the **last** number goes up for fixes and for parts of a milestone that ship before the rest (1.3.0 → 1.3.1), the **middle** one for a new milestone (1.3 → 1.4), and the **first** one for big changes to how the game is played (1.x → 2.0).
