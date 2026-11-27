@@ -5,7 +5,7 @@ A 3D castle builder played in the browser by a family with young kids. Live at h
 ## Start here
 
 - `docs/PROGRESS.md`: where things stand and what's next. Read it first.
-- `docs/ROADMAP.md`: milestones. Current version is v1.3.2, part of **v1.3 "A bigger, livelier island"** (bigger island, nature, digging); work continues on the rest of v1.3.
+- `docs/ROADMAP.md`: milestones. Current version is v1.3.3, part of **v1.3 "A bigger, livelier island"** (bigger island, nature, digging); work continues on the rest of v1.3.
 - `docs/ARCHITECTURE.md`: how `js/game.js` is organized, how saving works, and the save format.
 
 ## Ground rules
@@ -21,7 +21,7 @@ A 3D castle builder played in the browser by a family with young kids. Live at h
 ## Run and check
 
 - `python3 -m http.server 8000`, then open http://localhost:8000.
-- There are no automated tests yet. Check by hand in a browser at desktop and phone width (about 390 px): place and erase, each tab, characters, undo, reload (the castle should still be there), save to a file and open it, the How to play card, Save a picture, glass and ice stacks, digging and nature (water into a hole, then Undo), and the browser console for errors.
+- There are no automated tests yet. Check by hand in a browser at desktop and phone width (about 390 px): place and erase, each tab, characters, undo, reload (the castle should still be there), save to a file and open it, the How to play card, Save a picture, glass and ice stacks, digging and nature (water into a hole, then Undo), Peek (each floor of the sample castle), and the browser console for errors.
 - Google sign-in works only on the live site (its domain is the one allowed in Firebase).
 
 ## When shipping a change

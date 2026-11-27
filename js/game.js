@@ -519,6 +519,7 @@
   renderer.setClearColor(0x000000, 0);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.localClippingEnabled = true; // for Peek: blocks above a height are cut away
   stage.appendChild(renderer.domElement);
   const canvas = renderer.domElement;
 
@@ -1353,10 +1354,14 @@
     return Array.isArray(list) && list.every((e) => Array.isArray(e) && e.length >= 4 &&
       Number.isInteger(e[0]) && Number.isInteger(e[1]) && Number.isInteger(e[2]) && inMax(e[0], e[1], e[2]) && !!PIECE[e[3]] && !CHAR_SET.has(e[3]));
   }
+  const rise = { t0: 0 }; // a castle rising out of the ground (big loads)
   function loadBlocks(list, animate) {
     clearBlocks();
     let from = 0; // which layers pop up; lower ones appear at once
-    if (animate && list.length > 1200) { from = 1; if (list.filter((e) => e[1] >= 1).length > 2600) animate = false; }
+    if (animate && list.length > 1200) {
+      from = 1;
+      if (list.filter((e) => e[1] >= 1).length > 2000) { animate = false; if (!reduceMotion) rise.t0 = performance.now(); } // too many to pop: the whole castle rises instead
+    }
     const top = list.reduce((m, e) => Math.max(m, e[1]), 0), step = Math.min(110, 2000 / (top + 1));
     for (const e of list) {
       const pop = animate && e[1] >= from;
@@ -1588,88 +1593,124 @@
   }
 
   /* ---------- sample castle ---------- */
-  // A big castle with a real moat dug into the ground and filled with water (so it has banks on
-  // both sides and stays put), a bridge and gatehouse, four round towers with turrets, and a
-  // three-story keep with furniture on every floor. Returns its blocks and its dug-out squares.
+  // The castle a new player starts with (and ⋯ → Build sample castle): a moat dug into the ground
+  // and filled with water (so it has banks and stays put), a bridge, a gatehouse, curtain walls,
+  // four round towers, and a big three-story keep with rooms on every floor, doorways between
+  // them, and stairs from floor to floor. Returns its blocks and its dug-out squares.
   function sampleWorld() {
-    const base = shape(), holes = [];
-    const s = { put: (x, y, z, t, r) => base.put(x, y - 1, z, t, r) }; // the castle below is written with the ground floor at y = 1
-    const dig = (x, y, z, t) => { holes.push(x, y, z); if (t) base.put(x, y, z, t); };
-    for (let x = -15; x <= 15; x++) for (let z = -15; z <= 15; z++) {
-      if (Math.max(Math.abs(x), Math.abs(z)) >= 14) { dig(x, -1, z, 'water'); dig(x, -2, z, 'water'); } // the moat, two deep
+    const s = shape(), holes = [];
+    const put = s.put, del = s.del;
+    const dig = (x, y, z, t) => { holes.push(x, y, z); if (t) put(x, y, z, t); };
+    const edge = (x, z, d) => Math.max(Math.abs(x), Math.abs(z)) === d;
+    const doorway = (x, y, z, r) => { del(x, y, z); put(x, y + 1, z, 'gate', r); }; // open, with an arch on top
+    // a staircase climbing toward -z; it opens the floor above it so characters can walk up
+    const stairs = (x, z0, y0, steps) => {
+      for (let i = 0; i < steps; i++) {
+        const y = y0 + i, z = z0 - i;
+        for (let yy = y0; yy < y; yy++) put(x, yy, z, 'stone');
+        put(x, y, z, 'stairs', 0);
+        if (i < steps - 1) for (let yy = y + 1; yy < y0 + steps; yy++) del(x, yy, z);
+      }
+    };
+
+    // moat, bridge and path
+    for (let x = -19; x <= 19; x++) for (let z = -19; z <= 19; z++) {
+      if (Math.max(Math.abs(x), Math.abs(z)) >= 18) { dig(x, -1, z, 'water'); dig(x, -2, z, 'water'); }
     }
-    for (let z = 16; z <= 22; z++) dig(0, -1, z, 'cobble'); // a path set into the ground
-    for (let x = -4; x <= 4; x++) for (let z = -7; z <= -1; z++) dig(x, -1, z, 'cobble'); // a stone floor in the great hall
-    for (let z = 14; z <= 15; z++) { for (let x = -1; x <= 1; x++) base.put(x, -1, z, 'wood'); base.put(-1, 0, z, 'fence', 1); base.put(1, 0, z, 'fence', 1); } // bridge, level with the grass
-    base.put(-1, 0, 16, 'torch'); base.put(1, 0, 16, 'torch');
+    for (let z = 18; z <= 19; z++) { for (let x = -1; x <= 1; x++) put(x, -1, z, 'wood'); put(-1, 0, z, 'fence', 1); put(1, 0, z, 'fence', 1); }
+    for (let z = 20; z <= 27; z++) dig(0, -1, z, 'cobble');
+    put(-1, 0, 20, 'torch'); put(1, 0, 20, 'torch');
 
     // curtain wall with arrow slits and battlements
-    for (let y = 1; y <= 5; y++) for (let x = -11; x <= 11; x++) for (let z = -11; z <= 11; z++) {
-      if (Math.max(Math.abs(x), Math.abs(z)) !== 11) continue;
-      s.put(x, y, z, y === 3 && (x + z) % 4 === 0 ? 'window' : 'stone');
-      if (y === 5) s.put(x, 6, z, 'battlement');
+    for (let x = -15; x <= 15; x++) for (let z = -15; z <= 15; z++) {
+      if (!edge(x, z, 15)) continue;
+      for (let y = 0; y <= 5; y++) put(x, y, z, y === 3 && (x + z) % 4 === 0 ? 'window' : 'stone');
+      put(x, 6, z, 'battlement');
     }
-    // round corner towers
-    for (const cx of [-11, 11]) for (const cz of [-11, 11]) {
+    // round corner towers with turrets
+    for (const cx of [-15, 15]) for (const cz of [-15, 15]) {
       for (const [x, z] of outline(2.4, 2.4)) {
-        for (let y = 1; y <= 8; y++) s.put(cx + x, y, cz + z, (y === 4 || y === 7) && (x === 0 || z === 0) ? 'window' : 'stone');
-        s.put(cx + x, 9, cz + z, 'battlement');
+        for (let y = 0; y <= 9; y++) put(cx + x, y, cz + z, (y === 3 || y === 7) && (x === 0 || z === 0) ? 'window' : 'stone');
+        put(cx + x, 10, cz + z, 'battlement');
       }
-      for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) s.put(cx + x, 8, cz + z, 'stone');
-      s.put(cx, 9, cz, 'tower'); s.put(cx, 10, cz, 'tower'); s.put(cx, 11, cz, 'roof'); // a little turret on top
+      for (let x = -1; x <= 1; x++) for (let z = -1; z <= 1; z++) put(cx + x, 9, cz + z, 'stone');
+      put(cx, 10, cz, 'tower'); put(cx, 11, cz, 'tower'); put(cx, 12, cz, 'roof');
     }
-    // gatehouse with two turrets
-    for (let x = -3; x <= 3; x++) for (let z = 10; z <= 12; z++) for (let y = 1; y <= 7; y++) {
-      const edge = Math.abs(x) === 3 || z !== 11 || y === 7;
-      if (edge) s.put(x, y, z, (y === 4 && z === 12 && Math.abs(x) === 1) ? 'window' : 'stone');
-      if (y === 7) s.put(x, 8, z, Math.abs(x) === 3 && z === 12 ? 'tower' : 'battlement');
+    // gatehouse with an open gateway and two turrets
+    for (let x = -3; x <= 3; x++) for (let z = 14; z <= 16; z++) {
+      for (let y = 0; y <= 6; y++) put(x, y, z, y === 3 && Math.abs(x) === 1 && z !== 15 ? 'window' : 'stone');
+      put(x, 7, z, Math.abs(x) === 3 || z !== 15 ? 'battlement' : 'slab');
     }
-    for (let x = -2; x <= 2; x++) for (let y = 1; y <= 6; y++) s.put(x, y, 11, 'stone');
-    for (let z = 10; z <= 12; z++) { base.del(0, 0, z); s.put(0, 2, z, 'gate', 0); } // an open gateway, two high, with an arch on top
-    for (const x of [-3, 3]) { for (let y = 1; y <= 8; y++) s.put(x, y, 12, 'tower'); s.put(x, 9, 12, 'roof'); }
-    s.put(0, 9, 11, 'flag');
+    for (let z = 14; z <= 16; z++) doorway(0, 0, z, 0);
+    for (const x of [-3, 3]) { for (let y = 0; y <= 8; y++) put(x, y, 16, 'tower'); put(x, 9, 16, 'roof'); }
+    put(0, 8, 15, 'flag');
 
-    // the keep: three stories, wooden floors, windows, battlements and a tower on top
-    const K0 = -5, K1 = 5, Z0 = -8, Z1 = 0;
-    for (let y = 1; y <= 12; y++) for (let x = K0; x <= K1; x++) for (let z = Z0; z <= Z1; z++) {
-      const edge = x === K0 || x === K1 || z === Z0 || z === Z1, corner = (x === K0 || x === K1) && (z === Z0 || z === Z1);
-      if (edge) {
-        const win = !corner && (x + z) % 2 === 0 && (y === 2 || y === 3 || y === 6 || y === 7 || y === 10 || y === 11);
-        s.put(x, y, z, win ? 'window' : y <= 4 ? 'stone' : 'brick');
-      } else if (y === 5 || y === 9) s.put(x, y, z, 'wood');
+    // the keep: 19 × 13, three stories (ground y 0-3, floors at y 4 and 8, roof at 12)
+    const X = 9, Z0 = -12, Z1 = 0;
+    for (let x = -X; x <= X; x++) for (let z = Z0; z <= Z1; z++) {
+      const wall = Math.abs(x) === X || z === Z0 || z === Z1, corner = Math.abs(x) === X && (z === Z0 || z === Z1);
+      for (let y = 0; y <= 11; y++) {
+        if (wall) put(x, y, z, !corner && (x + z) % 2 === 0 && (y === 1 || y === 2 || y === 6 || y === 10) ? 'window' : y <= 3 ? 'stone' : 'brick');
+        else if (y === 4 || y === 8) put(x, y, z, 'wood');
+      }
+      put(x, 12, z, wall ? 'battlement' : 'slab');
+      if (!wall) dig(x, -1, z, Math.abs(x) >= 5 && x > 0 ? 'wood' : 'cobble'); // stone floors, planks in the armory
     }
-    for (let x = K0; x <= K1; x++) for (let z = Z0; z <= Z1; z++) {
-      const edge = x === K0 || x === K1 || z === Z0 || z === Z1;
-      s.put(x, 13, z, edge ? 'battlement' : 'slab');
+    for (const x of [-X, X]) for (const z of [Z0, Z1]) { put(x, 12, z, 'tower'); put(x, 13, z, 'tower'); put(x, 14, z, 'roof'); } // corner turrets
+    // inner walls: three rooms on the ground floor and the second floor, with doorways between them
+    for (const x of [-4, 4]) for (let z = Z0 + 1; z < Z1; z++) {
+      for (let y = 0; y <= 3; y++) put(x, y, z, 'stone');
+      for (let y = 5; y <= 7; y++) put(x, y, z, 'brick');
     }
-    base.del(0, 0, Z1); s.put(0, 2, Z1, 'gate', 0); // the keep's door, open, with an arch on top
-    for (let y = 13; y <= 17; y++) for (let x = -1; x <= 1; x++) for (let z = -5; z <= -3; z++) {
-      if (x === 0 && z === -4) continue;
-      s.put(x, y, z, y === 15 && (x === 0 || z === -4) ? 'window' : 'brick');
+    for (const x of [-4, 4]) { doorway(x, 0, -3, 1); doorway(x, 5, -3, 1); doorway(x, 0, -9, 1); }
+    doorway(0, 0, Z1, 0); // the front door
+    // the tower on top
+    for (let x = -2; x <= 2; x++) for (let z = -8; z <= -4; z++) {
+      if (Math.max(Math.abs(x), Math.abs(z + 6)) !== 2) continue;
+      for (let y = 12; y <= 17; y++) put(x, y, z, y === 14 && (x === 0 || z === -6) ? 'window' : 'brick');
+      put(x, 18, z, 'battlement');
     }
-    for (let x = -1; x <= 1; x++) for (let z = -5; z <= -3; z++) s.put(x, 18, z, x === 0 && z === -4 ? 'stone' : 'battlement');
-    s.put(0, 19, -4, 'flag');
-    // ground floor: the great hall
-    for (let z = -6; z <= -3; z++) { s.put(0, 1, z, 'table'); s.put(-1, 1, z, 'chair', 1); s.put(1, 1, z, 'chair', 3); }
-    s.put(0, 2, -5, 'candles'); s.put(0, 2, -3, 'candles');
-    s.put(0, 1, -7, 'throne', 0); s.put(-4, 1, -4, 'fireplace', 1); s.put(4, 1, -6, 'bookshelf', 3); s.put(4, 1, -5, 'bookshelf', 3);
-    for (let x = -1; x <= 1; x++) s.put(x, 1, -1, 'rug');
-    // second floor: bedrooms
-    s.put(-3, 6, -7, 'bed', 0); s.put(3, 6, -7, 'bed', 0); s.put(-3, 6, -5, 'chest', 0); s.put(3, 6, -5, 'chest', 0);
-    s.put(0, 6, -7, 'fireplace', 0); s.put(-4, 6, -2, 'bookshelf', 1); s.put(2, 6, -2, 'flowers'); s.put(0, 6, -3, 'rug');
-    // third floor: the storeroom
-    for (const [x, z] of [[-4, -7], [-3, -7], [-4, -6], [4, -7], [4, -1], [3, -1]]) s.put(x, 10, z, 'barrel');
-    s.put(0, 10, -7, 'chest', 0); s.put(-4, 10, -2, 'table'); s.put(-4, 11, -2, 'candles');
+    for (let x = -1; x <= 1; x++) for (let z = -7; z <= -5; z++) put(x, 18, z, 'slab');
+    put(0, 19, -6, 'flag');
+    // stairs: ground floor to the second (armory), second to third (library), third to the roof
+    stairs(7, -2, 0, 5);
+    stairs(-7, -2, 5, 4);
+    stairs(7, -2, 9, 4);
 
-    // courtyard: a fountain, trees, flowers and torches
-    for (let x = -1; x <= 1; x++) for (let z = 5; z <= 7; z++) s.put(x, 1, z, x === 0 && z === 6 ? 'water' : 'cobble');
-    for (const [x, z] of [[-7, 6], [7, 6], [-8, -9], [8, -9], [-8, 3], [8, 3]]) s.put(x, 1, z, 'tree');
-    for (const [x, z] of [[-3, 4], [3, 4], [-6, -2], [6, -2]]) s.put(x, 1, z, 'flowers');
-    for (const [x, z] of [[-1, 1], [1, 1], [-2, 9], [2, 9]]) s.put(x, 1, z, 'torch');
+    // ground floor: the kitchen, the great hall, the armory
+    for (let z = -9; z <= -4; z++) { put(0, 0, z, 'table'); put(-1, 0, z, 'chair', 1); put(1, 0, z, 'chair', 3); }
+    put(0, 1, -8, 'candles'); put(0, 1, -5, 'candles');
+    put(0, 0, -11, 'throne', 0); put(-2, 0, -11, 'fireplace', 0); put(2, 0, -11, 'fireplace', 0);
+    for (const z of [-1, -2, -3, -10]) put(0, 0, z, 'rug');
+    put(-8, 0, -8, 'fireplace', 1); put(-6, 0, -7, 'table'); put(-6, 0, -6, 'table'); put(-6, 1, -7, 'candles'); put(-6, 1, -6, 'flowers');
+    for (const [x, z] of [[-8, -11], [-7, -11], [-8, -10], [-8, -2]]) put(x, 0, z, 'barrel');
+    put(-5, 0, -11, 'chest', 0); put(-7, 0, -4, 'bench', 0);
+    put(5, 0, -11, 'chest', 0); put(6, 0, -11, 'chest', 0); put(8, 0, -11, 'barrel'); put(8, 0, -10, 'barrel');
+    for (const z of [-8, -7]) put(8, 0, z, 'iron'); put(5, 0, -6, 'bench', 1);
+    // second floor: the library, the royal bedroom, the kids' room
+    put(-1, 5, -11, 'bed', 0); put(1, 5, -11, 'bed', 0); put(0, 5, -11, 'fireplace', 0);
+    put(-1, 5, -9, 'chest', 0); put(1, 5, -9, 'chest', 0); put(-1, 6, -9, 'candles');
+    for (let x = -1; x <= 1; x++) put(x, 5, -6, 'rug');
+    put(-3, 5, -11, 'flowers'); put(3, 5, -11, 'flowers'); put(-3, 5, -1, 'bookshelf', 1);
+    for (let x = -8; x <= -5; x++) put(x, 5, -11, 'bookshelf', 0);
+    for (let z = -10; z <= -8; z++) put(-8, 5, z, 'bookshelf', 1);
+    put(-5, 5, -8, 'table'); put(-5, 6, -8, 'candles'); put(-5, 5, -7, 'chair', 2); put(-6, 5, -9, 'rug');
+    put(5, 5, -11, 'bed', 0); put(8, 5, -11, 'bed', 0); put(6, 5, -11, 'chest', 0); put(7, 5, -11, 'barrel');
+    put(6, 5, -8, 'rug'); put(7, 5, -8, 'rug'); put(5, 5, -9, 'flowers');
+    // top floor: the storeroom
+    for (const [x, z] of [[-8, -11], [-7, -11], [-8, -10], [-3, -11], [8, -11], [7, -11], [8, -10], [3, -1]]) put(x, 9, z, 'barrel');
+    put(0, 9, -11, 'chest', 0); put(-2, 9, -11, 'chest', 0); put(2, 9, -9, 'table'); put(2, 10, -9, 'candles');
+
+    // courtyard: a fountain with benches, trees, flowers and torches
+    for (let x = -1; x <= 1; x++) for (let z = 6; z <= 8; z++) put(x, 0, z, x === 0 && z === 7 ? 'water' : 'cobble');
+    put(-3, 0, 7, 'bench', 1); put(3, 0, 7, 'bench', 1);
+    for (const [x, z] of [[-10, 10], [10, 10], [-12, 3], [12, 3], [-12, -5], [12, -5], [-12, -11], [12, -11]]) put(x, 0, z, 'tree');
+    for (const [x, z] of [[-2, 5], [2, 5], [-6, 2], [6, 2], [-6, 12], [6, 12]]) put(x, 0, z, 'flowers');
+    for (const [x, z] of [[-1, 1], [1, 1], [-2, 13], [2, 13]]) put(x, 0, z, 'torch');
     // trees outside the moat, and farther out
-    for (const [x, z] of [[-18, -17], [17, -18], [-18, 6], [18, -4], [-6, 18], [7, 18], [18, 17], [-17, 17],
-      [-26, -22], [25, -27], [-28, 18], [27, 22], [-5, -28], [-27, -6], [28, 4], [6, 27], [-35, 30], [36, -12], [12, -38], [-38, -32]]) base.put(x, 0, z, 'tree');
-    return { blocks: base.list(), dug: holes };
+    for (const [x, z] of [[-22, -21], [21, -22], [-22, 8], [22, -4], [-7, 22], [8, 22], [22, 21], [-21, 21],
+      [-30, -26], [29, -31], [-32, 22], [31, 26], [-6, -32], [-31, -8], [32, 5], [7, 31], [-40, 34], [41, -14], [14, -42], [-42, -36]]) put(x, 0, z, 'tree');
+    return { blocks: s.list(), dug: holes };
   }
 
   /* ---------- landmarks: famous places built from ordinary blocks ---------- */
@@ -2077,10 +2118,10 @@
     const below = world.get(K(x, y - 1, z)), here = world.get(K(x, y, z));
     return (below && TOP[below.t] ? y - 1 + TOP[below.t] : y) + (here && here.t === 'rug' ? 0.025 : 0);
   }
-  function findStand(x, y, z) {
+  function findStand(x, y, z) { // the nearest height a character can stand at in this column, or null
     for (let yy = Math.min(y, MAXY - 1); yy >= -DEPTH; yy--) if (canStand(x, yy, z)) return yy;
     for (let yy = y + 1; yy < MAXY; yy++) if (canStand(x, yy, z)) return yy;
-    return -1;
+    return null;
   }
   function placeDragon(c, t) {
     const R = 7, alt = c.home.y + 7;
@@ -2125,7 +2166,7 @@
     for (const c of chars) {
       if (inside(c.home) && (c.kind === 'dragon' || inside(c.cell))) continue;
       pull(c.home);
-      if (c.kind !== 'dragon') { c.cell = { x: c.home.x, y: Math.max(0, findStand(c.home.x, c.home.y, c.home.z)), z: c.home.z }; c.moving = false; }
+      if (c.kind !== 'dragon') { c.cell = { x: c.home.x, y: findStand(c.home.x, c.home.y, c.home.z) ?? 0, z: c.home.z }; c.moving = false; }
     }
   }
   function serializeChars() { return chars.map((c) => { const s = charSpot(c); return [c.kind, s.x, s.y, s.z]; }); }
@@ -2138,15 +2179,15 @@
     for (const e of (list || [])) addChar(e[0], e[1], e[2], e[3]);
   }
   function sampleChars() {
-    return [['knight', 0, 0, 8], ['knight', 0, 0, 18], ['queen', 0, 0, 3], ['sheep', -18, 0, 2], ['sheep', -17, 0, 9], ['sheep', 19, 0, -8],
-      ['chicken', -5, 0, 6], ['chicken', 5, 0, 7], ['cat', 2, 0, -2], ['dragon', 0, 12, -4]];
+    return [['knight', 0, 0, 12], ['knight', 0, 0, 23], ['queen', 0, 0, -10], ['sheep', -22, 0, 3], ['sheep', -21, 0, 11], ['sheep', 23, 0, -9],
+      ['chicken', -5, 0, 9], ['chicken', 5, 0, 10], ['cat', -6, 5, -9], ['dragon', 0, 14, -6]];
   }
   function starterChars() { // the sample cast, set down on whatever is built there
     const out = [];
-    for (const [k, x, , z] of sampleChars()) {
-      if (k === 'dragon') { out.push([k, x, 0, z]); continue; }
-      const y = findStand(x, 20, z);
-      if (y >= 0) out.push([k, x, y, z]);
+    for (const [k, x, sy, z] of sampleChars()) {
+      if (k === 'dragon') { out.push([k, x, sy, z]); continue; }
+      const y = findStand(x, sy, z); // the nearest place to stand, starting where the sample castle puts them
+      if (y !== null) out.push([k, x, y, z]);
     }
     return out;
   }
@@ -2176,6 +2217,7 @@
   function poke(c) { c.jump = c.kind === 'dragon' ? 0.6 : 0.45; voice(c.kind); }
   function updateChars(dt, t) {
     for (const c of chars) {
+      c.obj.visible = !peek || c.obj.position.y < peek - 0.05; // hidden while peeking below them
       if (c.kind === 'dragon') {
         c.ang += dt * 0.42;
         placeDragon(c, t);
@@ -2195,7 +2237,7 @@
         if (k >= 1) { c.moving = false; c.wait = sp.idle[0] + Math.random() * (sp.idle[1] - sp.idle[0]); }
       } else {
         const { x, y, z } = c.cell;
-        if (!canStand(x, y, z)) { const ny = findStand(x, y, z); if (ny >= 0) c.cell = { x, y: ny, z }; }
+        if (!canStand(x, y, z)) { const ny = findStand(x, y, z); if (ny !== null) c.cell = { x, y: ny, z }; }
         c.obj.position.set(c.cell.x + 0.5, footY(c.cell.x, c.cell.y, c.cell.z), c.cell.z + 0.5);
         c.wait -= dt;
         if (c.wait <= 0 && !chooseStep(c)) c.wait = 1 + Math.random() * 2;
@@ -2856,6 +2898,53 @@
     toast('Castle loaded. Undo puts the old one back.');
   });
 
+  /* peek: look inside by cutting away everything above a floor (nothing is removed) */
+  // Every block material is cut by one clipping plane. Off, the plane is far above the sky; each
+  // tap of the eye button lowers it by one floor (4 squares), from the top of the castle down to
+  // the ground floor, then turns it off. Hidden blocks can't be tapped, and characters above the
+  // cut are hidden too.
+  let peek = 0; // 0 = off, else the height above which blocks are hidden
+  const peekPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6);
+  const cutMats = [];
+  (function cutMaterials() {
+    const skip = new Set([M.cloud, M.hit, M.rock, M.grass, M.dirt, M.under]);
+    const all = new Set();
+    for (const v of Object.values(M)) (Array.isArray(v) ? v : [v]).forEach((m) => { if (m && m.isMaterial && !skip.has(m)) all.add(m); });
+    all.forEach((m) => { m.clippingPlanes = [peekPlane]; m.clipShadows = true; cutMats.push(m); });
+  })();
+  const peekBtn = $('#peek');
+  function setPeek(h) {
+    peek = h;
+    // The cut sits a hair above the floor line, so the tops of the floor you look at stay whole. While
+    // peeking, only upward-facing surfaces cast shadows, so the bottoms of the hidden floor above
+    // (which sit on that same line) don't shade the room.
+    peekPlane.constant = h ? h + 0.003 : 1e6;
+    for (const m of cutMats) if (m.side === THREE.FrontSide) m.shadowSide = h ? THREE.FrontSide : null;
+    peekBtn.setAttribute('aria-pressed', h ? 'true' : 'false');
+    $('#peek-label').textContent = h ? (h === 4 ? 'Ground floor' : 'Floor ' + h / 4) : 'Peek';
+    refreshGhost();
+  }
+  const glide = { t0: 0, from: new THREE.Vector3(), to: new THREE.Vector3(), tFrom: new THREE.Vector3(), tTo: new THREE.Vector3() };
+  function lookDownInto(h) { // when Peek starts, tip the camera to look down into the rooms
+    const off = camera.position.clone().sub(controls.target), sph = new THREE.Spherical().setFromVector3(off);
+    if (sph.phi < 0.85 && controls.target.y <= h) return; // already looking down
+    sph.phi = Math.min(sph.phi, 0.85); sph.radius = Math.max(sph.radius, 24);
+    glide.tFrom.copy(controls.target); glide.tTo.copy(controls.target); glide.tTo.y = Math.max(0, Math.min(glide.tTo.y, h - 2));
+    glide.from.copy(camera.position); glide.to.setFromSpherical(sph).add(glide.tTo);
+    glide.t0 = performance.now();
+  }
+  function nextPeek() {
+    let top = 0;
+    for (const b of world.values()) if (b.y + 1 > top) top = b.y + 1;
+    const first = Math.floor((top - 1) / 4) * 4; // the highest floor line below the top of the castle
+    const next = !peek ? first : peek - 4;
+    const wasOff = !peek;
+    setPeek(next >= 4 ? next : 0);
+    if (peek) { hideHint(); if (wasOff && !reduceMotion) lookDownInto(peek); }
+    blip(peek ? 'place' : 'undo');
+  }
+  peekBtn.addEventListener('click', nextPeek);
+
   /* save a picture: the 3D view on a painted sky, saved as a JPEG (or shared, on phones and tablets) */
   function skyColors() {
     const css = getComputedStyle(document.documentElement), v = (n, f) => (css.getPropertyValue(n) || '').trim() || f;
@@ -2958,6 +3047,7 @@
       const list = TILES.filter((p) => p.cat === currentCat);
       if (list[idx]) selectPiece(list[idx].id);
     } else if (e.key === 'e' || e.key === 'E') setMode(mode === 'erase' ? 'build' : 'erase');
+    else if (e.key === 'p' || e.key === 'P') nextPeek();
     else if (e.key === 'b' || e.key === 'B') setMode('build');
     else if (e.key === 'n' || e.key === 'N') toggleNight();
     else if (e.key === 'Escape') openMenu(false);
@@ -2990,7 +3080,7 @@
     }
     let face = axis, t = t0;
     for (let i = 0, n = half * 4 + MAXY + 8; i < n; i++) {
-      const solid = world.has(K(cell[0], cell[1], cell[2])), earth = !solid && isEarth(cell[0], cell[1], cell[2]);
+      const solid = world.has(K(cell[0], cell[1], cell[2])) && (!peek || cell[1] < peek), earth = !solid && isEarth(cell[0], cell[1], cell[2]);
       if (solid || earth) { // a block, or the ground (which can be dug)
         if (face < 0) return null; // the camera is inside a block
         const n = [0, 0, 0]; n[face] = -step[face];
@@ -3020,7 +3110,7 @@
     return res;
   }
   function charTarget(c) {
-    if (!inBounds(c.x, c.y, c.z)) return -1;
+    if (!inBounds(c.x, c.y, c.z) || (peek && c.y >= peek)) return null;
     return selected === 'dragon' ? Math.max(0, c.y) : findStand(c.x, c.y, c.z);
   }
   function facingRot() {
@@ -3052,10 +3142,10 @@
     } else if (CHAR_SET.has(selected)) {
       if (chars.length >= MAX_CHARS) { toast('One island can hold up to ' + MAX_CHARS + ' characters'); return; }
       const c = p.place, y = charTarget(c);
-      if (y >= 0 && addChar(selected, c.x, y, c.z, { record: true, pop: true })) { voice(selected); changed(); hideHint(); }
+      if (y !== null && addChar(selected, c.x, y, c.z, { record: true, pop: true })) { voice(selected); changed(); hideHint(); }
     } else {
       const c = p.place;
-      if (canHold(c.x, c.y, c.z) && !world.has(K(c.x, c.y, c.z))) {
+      if (canHold(c.x, c.y, c.z) && !world.has(K(c.x, c.y, c.z)) && !(peek && c.y >= peek)) {
         addBlock(c.x, c.y, c.z, selected, rotFor(selected), { record: true, pop: true });
         natureAfter([[c.x, c.y, c.z]]);
         blip('place'); changed(); hideHint();
@@ -3074,14 +3164,14 @@
     }
     if (mode !== 'erase' && CHAR_SET.has(selected)) {
       const y = charTarget(p.place);
-      if (y >= 0) showGhost({ x: p.place.x, y, z: p.place.z }, 'build'); else ghost.visible = false;
+      if (y !== null) showGhost({ x: p.place.x, y, z: p.place.z }, 'build'); else ghost.visible = false;
       return;
     }
     if (mode === 'erase') {
       if (p.remove) showGhost(p.remove, 'erase'); else ghost.visible = false;
     } else {
       const c = p.place;
-      if (canHold(c.x, c.y, c.z) && !world.has(K(c.x, c.y, c.z))) showGhost(c, 'build'); else ghost.visible = false;
+      if (canHold(c.x, c.y, c.z) && !world.has(K(c.x, c.y, c.z)) && !(peek && c.y >= peek)) showGhost(c, 'build'); else ghost.visible = false;
     }
   }
   function refreshGhost() { if (lastMouse) updateGhost(lastMouse.x, lastMouse.y); else ghost.visible = false; }
@@ -3231,6 +3321,17 @@
       sizeIsland(shownHalf);
     }
     if (nature.queue.size || nature.dirty) natureStep(performance.now());
+    if (glide.t0) { // the camera gliding to look down into the rooms (Peek)
+      const k = Math.min(1, (performance.now() - glide.t0) / 700), e = k * k * (3 - 2 * k);
+      camera.position.lerpVectors(glide.from, glide.to, e);
+      controls.target.lerpVectors(glide.tFrom, glide.tTo, e);
+      if (k >= 1) glide.t0 = 0;
+    }
+    if (rise.t0) {
+      const k = (performance.now() - rise.t0) / 1000, sc = k >= 1 ? 1 : Math.max(0.001, easeOutBack(Math.max(0, k)));
+      blockGroup.scale.y = clearMesh.scale.y = sc;
+      if (k >= 1) rise.t0 = 0;
+    }
     if (pitsDirty) buildPits();
     if (clearDirty) buildClear(); else sortClear(false);
     updateChars(dt, t);

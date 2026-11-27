@@ -1,6 +1,6 @@
 # Roadmap
 
-_Current version: **v1.3.2** (27 Nov 2026). Last updated: 27 Nov 2026._
+_Current version: **v1.3.3** (27 Nov 2026). Last updated: 27 Nov 2026._
 
 This lists planned milestones in order. Each one has a goal, what's in it, and how we'll know it's done. Sizes are rough: **S** is an evening, **M** a few sessions, **L** a week or more of sessions. Plans can change; when they do, update this file and [PROGRESS.md](PROGRESS.md).
 
@@ -70,6 +70,7 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 | Weather: rain and snow you can turn on | S |
 | ✅ Nature that behaves like nature: water flows into holes, lava flows and cools into stone, ice and snow melt, sand falls (details below) (v1.3.1) | L |
 | ✅ Added on request: a **Dig** tool for holes up to 3 deep, and a bigger, taller sample castle with a real moat dug into the ground and a furnished three-story keep (v1.3.1) | M |
+| ✅ Added on request: **Peek** to look inside one floor at a time, and an even bigger sample castle with rooms, doorways and stairs on every floor (v1.3.3) | M |
 
 **Nature effects** (built in v1.3.1; the details are in [ARCHITECTURE.md](ARCHITECTURE.md#nature)):
 

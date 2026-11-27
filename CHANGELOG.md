@@ -2,6 +2,26 @@
 
 All notable changes, newest first. Planned work is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## v1.3.3 — 27 Nov 2026
+
+Peek inside, and a much bigger castle to peek into.
+
+**Peek**
+- A new eye button above the tray. Each tap hides everything above one floor, so you can look straight down into the rooms: top floor first, then down to the ground floor, then back to normal. Nothing is removed.
+- The camera glides up to look down into the rooms when Peek starts.
+- You can keep building on the floor you're looking at; hidden blocks can't be tapped. Characters above the cut are hidden too.
+- On a computer, **P** does the same.
+
+**A bigger sample castle**
+- The walls now enclose 31 × 31 squares (was 23 × 23), and the keep is 19 × 13 (was 11 × 9).
+- Every floor of the keep has rooms with doorways between them: a kitchen, the great hall and an armory on the ground floor; a library, the royal bedroom and a kids' room on the second floor; a storeroom at the top.
+- Stairs go from floor to floor and up to the roof, and the characters can climb them.
+- The courtyard has a fountain with benches. Big castles now rise out of the ground when built, instead of popping in block by block.
+
+**Fixes**
+- On a first visit, characters inside the keep started on the roof, and the dragon flew through the keep. They now start in their rooms, and the dragon circles above the tower.
+- Characters can be placed in, and stand in, a dug hole (they were refused one square down).
+
 ## v1.3.2 — 27 Nov 2026
 
 A fix for the sample castle's way in.

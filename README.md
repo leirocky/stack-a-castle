@@ -4,7 +4,7 @@ A 3D castle builder that runs in any web browser, on phones and computers. Stack
 
 **Play it:** https://leirocky.github.io/stack-a-castle/
 
-**Version 1.3.1** (27 Nov 2026) · [What's new](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
+**Version 1.3.3** (27 Nov 2026) · [What's new](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md)
 
 ![The sample castle: stone walls with battlements, four round towers with red roofs, a brick keep with a flag, a moat, and a dragon flying overhead](docs/screenshot.jpg)
 
@@ -22,9 +22,10 @@ A 3D castle builder that runs in any web browser, on phones and computers. Stack
 | Undo | Undo button (top right) | Undo button or **Ctrl/Cmd + Z** |
 | Day / night | Moon button | Moon button or **N** |
 | Nature on or off | **⋯ → Nature** | Same |
+| Look inside | The eye button above the tray hides one floor at a time | Same, or **P** |
 | Pick a piece by number | — | **1–9, 0** pick the pieces in the open tab |
 
-A **How to play** card appears on the first visit. More options are in the **⋯** menu: sign in to save online, build the sample castle (a big castle with a real moat and a furnished keep), make the island bigger, save a picture, reset the view, auto-spin, sound on/off, save to a file, open a saved file, how to play, and clear everything.
+A **How to play** card appears on the first visit. More options are in the **⋯** menu: sign in to save online, build the sample castle (a big castle with a real moat and a keep with rooms and stairs on every floor), make the island bigger, save a picture, reset the view, auto-spin, sound on/off, save to a file, open a saved file, how to play, and clear everything.
 
 ## What's in the game
 
@@ -33,6 +34,7 @@ A **How to play** card appears on the first visit. More options are in the **⋯
 - **Build (17):** wood, glass, slab, stairs, fence, door, lamp, lantern, seven colors, iron and clock
 - **Furniture (12):** table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench, barrel
 - **Dig:** the shovel at the front of the Nature tab digs holes in the grass, up to 3 deep.
+- **Peek:** the eye button hides the floors above, one at a time, so you can look into rooms.
 - **Nature:** water runs downhill and fills holes, lava cools into stone when it meets water, ice and snow melt next to fire, and sand falls. It only starts from something you do, and **⋯ → Nature** turns it off.
 - **Landmarks (9):** the Great Pyramid, Eiffel Tower, Big Ben, Statue of Liberty, Leaning Tower of Pisa, Colosseum, Stonehenge, Great Wall and Moai. Tap the grass and the whole landmark pops up out of ordinary blocks, facing you. You can change any part of it, and one Undo takes it away.
 - **Characters (6):** knight, queen, sheep, chicken, cat, dragon. They wander, walk through gates and doors, walk around furniture and over rugs, climb one block at a time, and avoid water and lava. The dragon circles in the sky. Tap a character to make it jump and make its sound.
