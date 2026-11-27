@@ -51,7 +51,7 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 1. **Reload the game on every family device** (see the first known issue). Publish the GitHub releases for v1.1.0, v1.2.0 and v1.3.0 (this session can't push tags, so they are made on GitHub's Releases page).
 2. **Check on the oldest tablet:** open a big castle (about 2,000 blocks, 20 characters) and see that spinning and building feel smooth. This finishes v1.1's "done when".
 3. **Check live sync:** sign in on two devices, build on one, and watch the other update.
-4. Then the rest of **v1.3, "A bigger, livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
+4. Then the rest of **v1.3, "A bigger, livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle, weather, and nature effects (water flowing into holes, lava cooling into stone, ice and snow melting, sand falling).
 
 The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
 
