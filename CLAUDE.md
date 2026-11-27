@@ -5,7 +5,7 @@ A 3D castle builder played in the browser by a family with young kids. Live at h
 ## Start here
 
 - `docs/PROGRESS.md`: where things stand and what's next. Read it first.
-- `docs/ROADMAP.md`: milestones. Current version is v1.2.0 (Landmarks); work is toward **v1.3 "A livelier island"**.
+- `docs/ROADMAP.md`: milestones. Current version is v1.3.0 (a bigger island); work is toward **v1.4 "A livelier island"**.
 - `docs/ARCHITECTURE.md`: how `js/game.js` is organized, how saving works, and the save format.
 
 ## Ground rules
@@ -14,7 +14,7 @@ A 3D castle builder played in the browser by a family with young kids. Live at h
 - **All art and sound are made in code.** There are no image or audio assets. New pieces and characters must be **original designs**: never copy characters, textures or names from other games or media.
 - **Kid-friendly:** plain, friendly wording; no ads, analytics or tracking.
 - **The game must stay playable without signing in.** Online saving is optional.
-- **Never break old saves.** The save format is versioned (`v: 3`). If it changes, raise `v`, keep loading older versions, and document it in `docs/ARCHITECTURE.md`.
+- **Never break old saves.** The save format is versioned (`v: 4`). If it changes, raise `v`, keep loading older versions, and document it in `docs/ARCHITECTURE.md`.
 - **Firebase:** `js/firebase-config.js` holds public values by design. Security comes from the Firestore rules in `docs/FIREBASE_SETUP.md`; don't loosen them. Each player's castle is `castles/{uid}`.
 - `main` is the live site. Prefer a branch and a pull request for anything beyond a small fix.
 

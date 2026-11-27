@@ -1,12 +1,19 @@
 # Project progress
 
-_Last updated: 26 Nov 2026 · Current version: **v1.2.0**_
+_Last updated: 27 Nov 2026 · Current version: **v1.3.0**_
 
 ## Where things stand
 
-**v1.2.0 is built** (26 Nov 2026): a new **Landmarks** tab with 9 famous places, plus three new blocks. It goes live when its pull request is merged into `main`. **v1.1.0** ("Smooth and solid", plus furniture) is live; two checks on real devices are still open (see **Next up**). Next comes **v1.3, "A livelier island"**. (Landmarks became v1.2, so the later milestones each moved down one number.)
+**v1.3.0 is built** (27 Nov 2026): islands start at 300 × 300 and can grow to 1000 × 1000 from the ⋯ menu. It goes live when its pull request is merged into `main`. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live; two checks on real devices are still open (see **Next up**). Next comes **v1.4, "A livelier island"**. (Landmarks and the bigger island were added on request, so the later milestones moved down.)
 
 v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file backups, and online with Google sign-in (Firebase), confirmed with a real Google sign-in on the live site.
+
+## History (v1.3)
+
+| Date | What changed |
+|---|---|
+| 27 Nov 2026 | **Bigger island:** starts at 300 × 300 (was 100 × 100) and grows from **⋯ → Bigger island** by 50 squares a side, up to 1000 × 1000; Undo shrinks it. Existing castles move over automatically. The rock and clouds scale with it, and the camera's near limit moves out when zoomed far out (this stopped stripes flickering on the grass). Save format v4 stores the size. |
+| 27 Nov 2026 | Tested: an old saved castle opening on the bigger island, building at the new edge, growing to the limit, Undo, reload, save to a file and open it, opening an old file, online saving (simulated Firebase), and the earlier checks. The live **v1.2** game was run against a v4 online save: it showed "Update needed" and did not overwrite it, both when the save was already there and when it arrived live. |
 
 ## History (v1.2)
 
@@ -41,16 +48,17 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 
 ## Next up
 
-1. **Merge v1.2.0**, then reload the game on every family device (see the first known issue). Create GitHub releases for v1.1.0 and v1.2.0.
+1. **Merge v1.3.0**, then reload the game on every family device (see the first known issue). Publish the GitHub releases for v1.1.0, v1.2.0 and v1.3.0 (this session can't push tags, so they are made on GitHub's Releases page).
 2. **Check on the oldest tablet:** open a big castle (about 2,000 blocks, 20 characters) and see that spinning and building feel smooth. This finishes v1.1's "done when".
 3. **Check live sync:** sign in on two devices, build on one, and watch the other update.
-4. Then **v1.3, "A livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
+4. Then **v1.4, "A livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
 
-The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
+The full list, and the milestones after it (v1.5 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
 
 ## Known issues and limits
 
-- **After an update, reload the game on every device.** A copy of v1.0 left open in a tab can't read castles with furniture or the new blocks, and its next save online could overwrite them. Reloading the page fixes it. (From v1.1 on, the game spots saves from a newer version, says "Update needed" and stops saving instead.)
+- **After an update, reload the game on every device.** A copy of v1.0 left open in a tab can't read newer castles, and its next save online could overwrite them. Reloading the page fixes it. (Versions 1.1 and later spot saves from a newer version, say "Update needed" and stop saving instead.)
+- **A huge island is mostly empty grass.** Getting around a 1000 × 1000 island takes a lot of panning (two fingers, or the right mouse button). Shadows are only drawn near the middle of the view.
 - **Landmarks need open space.** A landmark is only placed if all of it fits on the island; squares that already have a block are skipped, so it builds around what's there. Placing one on a tall building can push it over the height limit.
 - **Pieces placed on a rug or slab** sit a full block up, like in other block-building games. Candles, flowers and rugs are the exception: they sit down onto low furniture.
 - **Without signing in, saves live in one browser on one device.** Clearing site data deletes them. Sign in, or use **Save to a file**.
@@ -80,3 +88,5 @@ The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0
 | No save-format change for furniture | Pieces are saved by name, so new pieces need no new version. Older saves load as before. |
 | Landmarks are built from ordinary blocks | Kids can change any part, Undo works, and saving needs no change. A single big model would look smoother but couldn't be edited. |
 | Landmarks of real places, made blocky | Famous buildings are fine to show; they are simple block versions, not copies of anyone's artwork. |
+| One island, scaled, instead of tiles of land | The island is a single box however big it is, so a 1000 × 1000 island costs no more to draw than a small one. |
+| A marker entry in v4 saves | It's the only way to make the already-released v1.1 and v1.2 games refuse a bigger island instead of overwriting it. |

@@ -178,6 +178,7 @@ html.is-night .sky-night { opacity: 1; }
   cursor: pointer;
 }
 .menu button:hover { background: rgba(45, 76, 192, 0.08); }
+.menu button:disabled { opacity: 0.5; cursor: default; background: transparent; }
 .menu .state { margin-left: auto; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .menu .danger { color: var(--banner); }
 .menu .danger.confirm { background: var(--banner); color: #fff; }
