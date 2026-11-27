@@ -1,10 +1,10 @@
 # Project progress
 
-_Last updated: 27 Nov 2026 · Current version: **v1.3.2**_
+_Last updated: 27 Nov 2026 · Current version: **v1.3.3**_
 
 ## Where things stand
 
-**v1.3.2 is built** (27 Nov 2026): the sample castle's bridge is level with the grass and its doorways are open and easy to see. It goes live when its pull request is merged. **v1.3.1** (nature, the **Dig** tool, and a bigger sample castle with a real moat dug into the ground) and **v1.3.0** (islands start at 300 × 300 and grow to 1000 × 1000) are live. Both are part of **v1.3, "A bigger, livelier island"**; still to come in v1.3: new and smarter characters, more pieces, a day–night cycle and weather. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live too; two checks on real devices are still open (see **Next up**).
+**v1.3.3 is built** (27 Nov 2026): **Peek** (an eye button that shows one floor at a time) and a much bigger sample castle with rooms, doorways and stairs. It goes live when its pull request is merged. Live already: **v1.3.2** (the bridge and doorways fix), **v1.3.1** (nature, the **Dig** tool, a castle with a real moat) and **v1.3.0** (islands start at 300 × 300 and grow to 1000 × 1000). Both are part of **v1.3, "A bigger, livelier island"**; still to come in v1.3: new and smarter characters, more pieces, a day–night cycle and weather. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live too; two checks on real devices are still open (see **Next up**).
 
 v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file backups, and online with Google sign-in (Firebase), confirmed with a real Google sign-in on the live site.
 
@@ -12,6 +12,7 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 
 | Date | What changed |
 |---|---|
+| 27 Nov 2026 | **Peek** (v1.3.3): an eye button cuts away everything above one floor at a time (a clipping plane on all block materials), and the camera glides to look down into the rooms. **Bigger sample castle**: 31 × 31 walls, a 19 × 13 keep with three rooms on each of the lower floors, doorways, and stairs up to the roof. Big castles rise out of the ground when built. Fixed: on a first visit the queen and cat started on the keep's roof and the dragon flew through it; characters couldn't be placed one square down in a hole. Tested: a walk test reaching every room and floor on foot, each Peek level, building while peeking, phone width, and the earlier checks. |
 | 27 Nov 2026 | **Fix** (v1.3.2): the sample castle's bridge was a raised box that hid the gate, and its doorways were small arches. The bridge is now level with the grass, and the gatehouse and keep have open doorways two high with arches on top. Checked that a character can walk from the path, over the bridge and through the gate into the keep's hall. |
 | 27 Nov 2026 | **Nature** (v1.3.1): water, lava, ice, snow and sand follow simple rules after a player changes something nearby; one Undo takes back the change and its effects; **⋯ → Nature** turns it off. **Dig** tool for holes up to 3 deep, drawn with a grass mask and dirt walls. **New sample castle**: moat dug two deep and filled with water, gatehouse, four towers with turrets, a furnished three-story keep. The pyramid landmark got hidden stone so its sand doesn't fall. Save format v5 stores holes. |
 | 27 Nov 2026 | Tested (v1.3.1): each nature rule and its Undo, the Nature switch, a waterfall off a wall, digging with clicks (deeper, then sideways at the bottom), water running into holes, a hole dug beside the moat filling while building next to the moat doesn't spill it, reload, files, online saving (simulated Firebase), and the live v1.3.0 game refusing a v5 save. |
@@ -63,6 +64,7 @@ The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0
 - **After an update, reload the game on every device.** A copy of v1.0 left open in a tab can't read newer castles, and its next save online could overwrite them. Reloading the page fixes it. (Versions 1.1 and later spot saves from a newer version, say "Update needed" and stop saving instead.)
 - **A huge island is mostly empty grass.** Getting around a 1000 × 1000 island takes a lot of panning (two fingers, or the right mouse button). Shadows are only drawn near the middle of the view.
 - **Old moats on flat ground can spill.** With Nature on, water placed on the grass spreads a few squares. A moat built on top of the grass in an older castle stays as it is until someone builds right next to it; then it can spill. Undo puts it back, or turn **⋯ → Nature** off. The new sample castle's moat is dug into the ground, so it stays put.
+- **Peek cuts every 4 squares**, which matches the sample castle's floors. In castles with other floor heights it still cuts every 4 squares, so a cut can fall in the middle of a room.
 - **Holes are at most 3 deep**, and characters that fall into a hole deeper than 1 can't climb out.
 - **Nature has limits:** water spreads at most 3 squares from where it started (lava 1), one action can set off at most 600 changes, and flowing water doesn't drain away when its source is removed.
 - **Landmarks need open space.** A landmark is only placed if all of it fits on the island; squares that already have a block are skipped, so it builds around what's there. Placing one on a tall building can push it over the height limit.

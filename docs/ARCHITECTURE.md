@@ -92,7 +92,18 @@ How it works (the **nature** section):
 
 ### The sample castle
 
-`sampleWorld()` builds the castle a new player starts with (and **⋯ → Build sample castle**): a moat dug two squares deep and filled with water (so it has banks and stays put when nature is on), a bridge, a cobblestone path and a stone hall floor set into the ground, a gatehouse with turrets, curtain walls, four round towers with turrets, and a three-story keep with furniture on each floor and a tower on top. It returns its blocks and its dug squares.
+`sampleWorld()` builds the castle a new player starts with (and **⋯ → Build sample castle**): a moat dug two squares deep and filled with water (so it has banks and stays put when nature is on), a bridge level with the grass, a cobblestone path set into the ground, a gatehouse with an open gateway, curtain walls (31 × 31), four round towers with turrets, and a 19 × 13 keep. The keep has three stories, 4 squares each (ground floor y 0–3, wooden floors at y 4 and 8, roof at 12), so Peek shows one story at a time. Inner walls split the lower two stories into three rooms each, with open doorways (`doorway()`: an empty square with a gate arch above). `stairs()` builds a staircase and opens the floor above it, so characters can climb from floor to floor. It returns its blocks and its dug squares; `sampleChars()` puts the characters in their rooms.
+
+Castles of more than about 2,000 blocks above ground rise out of the ground when built (the block group is stretched up from flat) instead of popping in block by block, which would mean thousands of separate objects for a moment.
+
+### Peek
+
+The eye button (or **P**) cuts away everything above a height so you can look into rooms. All block materials share one clipping plane (`peekPlane`). Off, it sits far above the sky. Each tap lowers it by one floor, 4 squares: from the highest multiple of 4 below the top of the castle, down to 4 (the ground floor), then off.
+
+- The cut sits a hair above the floor line, so the tops of the floor you look at stay whole. While peeking, only upward-facing surfaces cast shadows, so the bottoms of the hidden floor above (on the same line) don't shade the room.
+- The voxel walk treats hidden blocks as air, nothing can be placed above the cut, and characters above it are hidden.
+- When Peek starts, the camera glides to look down from above (`lookDownInto`), unless it already is.
+- It changes only the view; nothing is saved.
 
 ## Characters
 
