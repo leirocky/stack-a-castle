@@ -1,6 +1,6 @@
 # Roadmap
 
-_Current version: **v1.3.4** (27 Nov 2026). Last updated: 27 Nov 2026._
+_Current version: **v1.3.5** (27 Nov 2026). Last updated: 27 Nov 2026._
 
 This lists planned milestones in order. Each one has a goal, what's in it, and how we'll know it's done. Sizes are rough: **S** is an evening, **M** a few sessions, **L** a week or more of sessions. Plans can change; when they do, update this file and [PROGRESS.md](PROGRESS.md).
 
@@ -9,7 +9,7 @@ This lists planned milestones in order. Each one has a goal, what's in it, and h
 | [v1.0](#v10--the-castle-builder-released) | The castle builder | ✅ Released 26 Nov 2026 |
 | [v1.1](#v11--smooth-and-solid) | Smooth and solid (plus furniture) | ✅ Built 26 Nov 2026 · two checks on real devices left |
 | [v1.2](#v12--landmarks-released) | Landmarks | ✅ Released 26 Nov 2026 |
-| [v1.3](#v13--a-bigger-livelier-island) | A bigger, livelier island | ✅ Built 27 Nov 2026 (v1.3.0 to v1.3.4) |
+| [v1.3](#v13--a-bigger-livelier-island) | A bigger, livelier island | ✅ Built 27 Nov 2026 (v1.3.0 to v1.3.5) |
 | [v1.4](#v14--many-castles) | Many castles | Planned |
 | [v2.0](#v20--quests-and-challenges) | Quests and challenges | Planned |
 | [v3.0](#v30--build-together) | Build together | Idea |
@@ -68,10 +68,12 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 | ✅ New pieces: arch, bridge, ladder, well, banners in four colors, flower bed (the bench arrived early, in v1.1's Furniture tab) (v1.3.4) | M |
 | ✅ Automatic day–night cycle (optional, **⋯ → Day and night**), with a sunrise and sunset (v1.3.4) | S |
 | ✅ Weather: rain and snow you can turn on (**⋯ → Weather**) (v1.3.4) | S |
+| ✅ Added on request: weather changes by itself, and snow settles white on the ground and the tops of blocks (v1.3.5) | S |
 | ✅ Nature that behaves like nature: water flows into holes, lava flows and cools into stone, ice and snow melt, sand falls (details below) (v1.3.1) | L |
 | ✅ Added on request: a **Dig** tool for holes up to 3 deep, and a bigger, taller sample castle with a real moat dug into the ground and a furnished three-story keep (v1.3.1) | M |
 | ✅ Added on request: **Peek** to look inside one floor at a time, and an even bigger sample castle with rooms, doorways and stairs on every floor (v1.3.3) | M |
 | ✅ Added on request: tap a **door** to open or close it; characters open doors as they walk through (v1.3.4) | S |
+| ✅ Added on request: **Walk**, a player view: be the explorer and walk around in first person (or from behind), through doorways, up stairs and ladders, with keys or an on-screen pad (v1.3.5) | M |
 
 **Nature effects** (built in v1.3.1; the details are in [ARCHITECTURE.md](ARCHITECTURE.md#nature)):
 

@@ -1448,7 +1448,7 @@
   function stepDoors(dt) {
     for (const rec of autoDoors) { // shut once no one is in the doorway for a moment
       if (world.get(K(rec.x, rec.y, rec.z)) !== rec || !rec.open) { autoDoors.delete(rec); continue; }
-      const busy = chars.some((c) => c.cell.x === rec.x && c.cell.z === rec.z && c.cell.y === rec.y);
+      const busy = chars.some((c) => c.cell.x === rec.x && c.cell.z === rec.z && c.cell.y === rec.y) || playerIn(rec.x, rec.y, rec.z);
       rec.shutT = busy ? 1.2 : rec.shutT - dt;
       if (rec.shutT <= 0) setDoor(rec, false, true);
     }
@@ -2098,7 +2098,12 @@
     owlEye: new THREE.MeshBasicMaterial({ color: '#f2c230' }),
     ghost: std({ color: '#f4f7ff', emissive: new THREE.Color('#cfe0ff'), emissiveIntensity: 0.55, transparent: true, opacity: 0.85, roughness: 0.6 }),
     ghostFace: new THREE.MeshBasicMaterial({ color: '#2b2d40', transparent: true, opacity: 0.85 }),
-    ghostCheek: new THREE.MeshBasicMaterial({ color: '#f5a3b8', transparent: true, opacity: 0.85 })
+    ghostCheek: new THREE.MeshBasicMaterial({ color: '#f5a3b8', transparent: true, opacity: 0.85 }),
+    tunic: std({ color: '#2f9e8f', roughness: 0.8 }),
+    trousers: std({ color: '#3d4f7a', roughness: 0.85 }),
+    boot: std({ color: '#4a3324', roughness: 0.8 }),
+    cap: std({ color: '#e0752b', roughness: 0.75 }),
+    scarf: std({ color: '#f2c230', roughness: 0.8 })
   };
   const CG = {
     sph: new THREE.SphereGeometry(1, 14, 10), ico: new THREE.IcosahedronGeometry(1, 1),
@@ -2117,7 +2122,8 @@
   const HIT_DRAGON = new THREE.BoxGeometry(1.1, 1.2, 1.7);
   const HIT_SIZE = { // tap boxes: size and height
     dragon: [HIT_DRAGON, 0.6], horse: [new THREE.BoxGeometry(0.5, 1.05, 1.0), 0.52], owl: [new THREE.BoxGeometry(0.4, 0.6, 0.4), 0.3],
-    ghost: [new THREE.BoxGeometry(0.6, 0.8, 0.6), 0.6], dog: [new THREE.BoxGeometry(0.4, 0.5, 0.6), 0.25]
+    ghost: [new THREE.BoxGeometry(0.6, 0.8, 0.6), 0.6], dog: [new THREE.BoxGeometry(0.4, 0.5, 0.6), 0.25],
+    player: [new THREE.BoxGeometry(0.45, 0.85, 0.45), 0.42]
   };
   function part(parent, geo, mat, sc, pos, rot) {
     const m = new THREE.Mesh(geo, mat);
@@ -2252,6 +2258,30 @@
         g.add(pivot);
         g.userData.wings.push(pivot);
       }
+    },
+    player(g) { // the explorer you walk as (Walk button): a kid with a cap, a scarf and a backpack
+      for (const sx of [1, -1]) {
+        part(g, CG.cyl, CM.trousers, [0.055, 0.2, 0.055], [sx * 0.065, 0.13, 0]);
+        part(g, CG.cyl, CM.boot, [0.062, 0.07, 0.072], [sx * 0.065, 0.035, 0.012]);
+        part(g, CG.cyl, CM.tunic, [0.042, 0.2, 0.042], [sx * 0.18, 0.37, 0], [0, 0, sx * 0.18]);
+        part(g, CG.sph, CM.skin, [0.042, 0.042, 0.042], [sx * 0.2, 0.26, 0]);
+        part(g, CG.sph, CM.dark, [0.017, 0.022, 0.01], [sx * 0.045, 0.645, 0.125]);
+        part(g, CG.sph, CM.pink, [0.022, 0.014, 0.008], [sx * 0.078, 0.612, 0.11]);
+        part(g, CG.box, CM.belt, [0.025, 0.2, 0.02], [sx * 0.07, 0.4, 0.128]);
+      }
+      part(g, CG.cyl, CM.tunic, [0.145, 0.27, 0.13], [0, 0.37, 0]);
+      part(g, CG.cyl, CM.tunic, [0.16, 0.06, 0.145], [0, 0.245, 0]);
+      part(g, CG.cyl, CM.belt, [0.15, 0.035, 0.135], [0, 0.28, 0]);
+      part(g, CG.box, M.gold, [0.045, 0.032, 0.012], [0, 0.28, 0.137]);
+      part(g, CG.cyl, CM.scarf, [0.11, 0.045, 0.1], [0, 0.5, 0]);
+      part(g, CG.box, CM.scarf, [0.04, 0.11, 0.015], [0.05, 0.44, 0.1], [0, 0, 0.15]);
+      part(g, CG.sph, CM.skin, [0.135, 0.13, 0.13], [0, 0.64, 0]);
+      part(g, CG.sph, CM.hair, [0.14, 0.1, 0.14], [0, 0.685, -0.02]);
+      part(g, CG.sph, CM.cap, [0.142, 0.075, 0.142], [0, 0.725, 0]);
+      part(g, CG.cyl, CM.cap, [0.09, 0.016, 0.075], [0, 0.712, 0.12]);
+      part(g, CG.box, CM.dark, [0.04, 0.008, 0.01], [0, 0.598, 0.128]);
+      part(g, CG.box, CM.horse, [0.18, 0.2, 0.08], [0, 0.39, -0.15]);
+      part(g, CG.box, CM.belt, [0.186, 0.05, 0.086], [0, 0.47, -0.15]);
     },
     ghost(g) {
       part(g, CG.sph, CM.ghost, [0.2, 0.22, 0.2], [0, 0.66, 0]);
@@ -3255,12 +3285,15 @@
   /* ---------- sky: the day–night cycle and weather ---------- */
   // With the cycle on, time passes by itself: a day, a sunset, a night and a sunrise, about five
   // minutes in all. The sun crosses the sky, and the sky glows orange at sunrise and sunset.
-  // Weather (clear, rain, snow) is one cloud of falling drops or flakes that follows the camera.
-  const CYCLE_KEY = 'stack-a-castle:cycle', WEATHER_KEY = 'stack-a-castle:weather';
+  // Weather changes by itself (sunny spells, rain and snow) unless it's switched off; it is one cloud
+  // of falling drops or flakes that follows the camera, and snow settles on everything facing up.
+  const CYCLE_KEY = 'stack-a-castle:cycle', WEATHER_KEY = 'stack-a-castle:weather-auto';
   const DAYLEN = { day: 150, dusk: 20, night: 90, dawn: 20 }; // seconds
   const LOOP = DAYLEN.day + DAYLEN.dusk + DAYLEN.night + DAYLEN.dawn, SPAN = DAYLEN.dawn + DAYLEN.day + DAYLEN.dusk;
-  const savedWeather = store.get(WEATHER_KEY);
-  const sky = { cycle: store.get(CYCLE_KEY) === 'on', clock: 0, glow: 0, sunAt: 0.5, weather: savedWeather === 'rain' || savedWeather === 'snow' ? savedWeather : 'clear', dirty: true };
+  const sky = {
+    cycle: store.get(CYCLE_KEY) === 'on', clock: 0, glow: 0, sunAt: 0.5, dirty: true,
+    auto: store.get(WEATHER_KEY) !== 'off', weather: 'clear', want: 'clear', wamt: 0, wtimer: 25 + Math.random() * 40, cover: 0
+  };
   const skyNight = $('.sky-night'), skyDusk = $('.sky-dusk'), skyGrey = $('.sky-grey');
   for (const el of document.querySelectorAll('.sky')) el.style.transition = 'none'; // the loop sets them every frame
   function cyclePhase(clock) { // { n: how much night, glow: sunrise/sunset glow, sun: 0 east to 1 west }
@@ -3278,11 +3311,12 @@
       const a = sky.sunAt * Math.PI;
       sunOffset.set(Math.cos(a) * 48, 8 + Math.sin(a) * 46, 22).lerp(NIGHT.sunPos, nightT);
     }
-    if (sky.weather === 'rain') { hemi.intensity *= 0.75; sun.intensity *= 0.5; }
-    else if (sky.weather === 'snow') { hemi.intensity *= 0.92; sun.intensity *= 0.75; }
+    const wa = sky.wamt; // how much it's raining or snowing (fades in and out)
+    if (sky.weather === 'rain') { hemi.intensity *= 1 - 0.25 * wa; sun.intensity *= 1 - 0.5 * wa; }
+    else if (sky.weather === 'snow') { hemi.intensity *= 1 - 0.08 * wa; sun.intensity *= 1 - 0.25 * wa; }
     skyNight.style.opacity = nightT;
     skyDusk.style.opacity = sky.glow;
-    skyGrey.style.opacity = sky.weather === 'rain' ? 0.6 * (1 - nightT * 0.6) : sky.weather === 'snow' ? 0.35 * (1 - nightT * 0.6) : 0;
+    skyGrey.style.opacity = (sky.weather === 'rain' ? 0.6 : sky.weather === 'snow' ? 0.35 : 0) * wa * (1 - nightT * 0.6);
   }
   function stepSky(dt) {
     if (sky.cycle) {
@@ -3330,13 +3364,62 @@
   const dropBox = new THREE.Vector3();
   drops.frustumCulled = false;
   scene.add(drops);
+  // snow on top: every block material (and the grass) mixes toward white where it faces up
+  const SNOW_U = { value: 0 };
+  (function snowOnTop() {
+    const skip = new Set([M.water, M.lava, M.cloud, M.glass, M.ice, M.rock]);
+    const all = new Set();
+    for (const v of Object.values(M)) (Array.isArray(v) ? v : [v]).forEach((m) => { if (m && m.isMeshStandardMaterial && !skip.has(m)) all.add(m); });
+    for (const m of all) {
+      const prev = m.onBeforeCompile, prevKey = prev.toString();
+      m.onBeforeCompile = function (sh, r) {
+        prev.call(this, sh, r);
+        sh.uniforms.snowAmt = SNOW_U;
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float snowAmt;').replace('#include <normal_fragment_maps>',
+          '#include <normal_fragment_maps>\n  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.95, 1.0) * (0.86 + 0.14 * dot(diffuseColor.rgb, vec3(0.7))), snowAmt * smoothstep(0.45, 0.85, (vec4(normal, 0.0) * viewMatrix).y));');
+      };
+      m.customProgramCacheKey = () => 'snow|' + prevKey; // keep each material's own shader apart
+      m.needsUpdate = true;
+    }
+  })();
+  function lookOfWeather(w) { // switch the drops to rain or snow
+    sky.weather = w;
+    dropMat.map = DROP_TEX[w === 'snow' ? 'snow' : 'rain'];
+    dropMat.size = w === 'snow' ? 0.5 : 1.5;
+    dropMat.opacity = w === 'snow' ? 0.95 : 0.55;
+    dropMat.needsUpdate = true;
+    sky.dirty = true;
+    rainSound();
+  }
+  function weatherClock(dt) {
+    if (!sky.auto) sky.want = 'clear';
+    else if ((sky.wtimer -= dt) <= 0) { // a sunny spell, then rain or snow for a while, then sun again
+      if (sky.want === 'clear') { sky.want = Math.random() < 0.5 ? 'rain' : 'snow'; sky.wtimer = 45 + Math.random() * 45; }
+      else { sky.want = 'clear'; sky.wtimer = 60 + Math.random() * 90; }
+    }
+    const before = sky.wamt;
+    if (sky.weather !== sky.want) { sky.wamt = Math.max(0, sky.wamt - dt / 6); if (sky.wamt === 0) lookOfWeather(sky.want); } // fade out the old weather first
+    else if (sky.weather !== 'clear') sky.wamt = Math.min(1, sky.wamt + dt / 6);
+    if (sky.wamt !== before) {
+      sky.dirty = true;
+      dropGeo.setDrawRange(0, Math.round(NDROPS * sky.wamt));
+      drops.visible = sky.wamt > 0;
+      if (rainGain) rainGain.gain.value = 0.045 * sky.wamt;
+    }
+    if (sky.weather === 'rain' && soundOn && actx && !rainNoise) rainSound();
+    // snow settles while it snows and melts afterwards (faster in rain)
+    const c0 = sky.cover;
+    sky.cover = sky.weather === 'snow' ? Math.min(1, sky.cover + dt * sky.wamt / 35) : Math.max(0, sky.cover - dt / (sky.weather === 'rain' ? 15 : 50));
+    if (sky.cover !== c0) SNOW_U.value = sky.cover * 0.9;
+  }
   function stepWeather(dt, t) {
-    if (sky.weather === 'clear') return;
+    weatherClock(dt);
+    if (sky.weather === 'clear' || !sky.wamt) return;
     const rain = sky.weather === 'rain', p = dropPos, dist = camera.position.distanceTo(controls.target);
     const box = dropBox.copy(controls.target).lerp(camera.position, 0.3); // the box sits a little in front of the camera
-    const W = Math.max(24, Math.min(110, dist * 0.8)), H = Math.max(20, Math.min(60, W * 0.7)), bottom = Math.min(box.y - H / 2, -1), top = bottom + H;
+    const span = Math.max(24, Math.min(110, dist * 0.8)), H = Math.max(20, Math.min(60, span * 0.7)), bottom = Math.min(box.y - H / 2, -1), top = bottom + H;
     const fall = rain ? 24 : 2.2, cx = box.x, cz = box.z;
-    const wrap = (v, c) => c + ((((v - c) + W / 2) % W) + W) % W - W / 2;
+    const wrap = (v, c) => c + ((((v - c) + span / 2) % span) + span) % span - span / 2;
     for (let i = 0; i < NDROPS; i++) {
       const j = i * 3, sd = dropSeed[i];
       p[j + 1] -= fall * dt * (0.8 + sd * 0.4);
@@ -3346,7 +3429,7 @@
     }
     dropGeo.attributes.position.needsUpdate = true;
   }
-  let rainNoise = null;
+  let rainNoise = null, rainGain = null;
   function rainSound() { // a soft rain hiss while it rains (sound on)
     const want = soundOn && sky.weather === 'rain' && !!actx;
     if (want && !rainNoise) {
@@ -3354,32 +3437,26 @@
         const len = actx.sampleRate * 2, buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
         for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
         const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
-        src.buffer = buf; src.loop = true; f.type = 'lowpass'; f.frequency.value = 1400; g.gain.value = 0.045;
+        src.buffer = buf; src.loop = true; f.type = 'lowpass'; f.frequency.value = 1400; g.gain.value = 0.045 * sky.wamt;
         src.connect(f); f.connect(g); g.connect(actx.destination); src.start();
-        rainNoise = src;
+        rainNoise = src; rainGain = g;
       } catch (e) { rainNoise = null; }
-    } else if (!want && rainNoise) { try { rainNoise.stop(); } catch (e) { /* already stopped */ } rainNoise = null; }
+    } else if (!want && rainNoise) { try { rainNoise.stop(); } catch (e) { /* already stopped */ } rainNoise = null; rainGain = null; }
   }
-  function setWeather(w) {
-    sky.weather = w;
-    store.set(WEATHER_KEY, w);
-    $('#weather-state').textContent = w === 'rain' ? 'Rain' : w === 'snow' ? 'Snow' : 'Clear';
-    drops.visible = w !== 'clear';
-    dropMat.map = DROP_TEX[w === 'snow' ? 'snow' : 'rain'];
-    dropMat.size = w === 'snow' ? 0.5 : 1.5;
-    dropMat.opacity = w === 'snow' ? 0.95 : 0.55;
-    dropMat.needsUpdate = true;
-    sky.dirty = true;
-    rainSound();
+  function setAutoWeather(on) {
+    sky.auto = on;
+    store.set(WEATHER_KEY, on ? 'on' : 'off');
+    $('#weather-state').textContent = on ? 'On' : 'Off';
+    if (on && sky.want === 'clear') sky.wtimer = Math.min(sky.wtimer, 15 + Math.random() * 20); // something soon
   }
   $('#m-weather').addEventListener('click', () => {
-    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) { /* no audio */ }
-    const next = sky.weather === 'clear' ? 'rain' : sky.weather === 'rain' ? 'snow' : 'clear';
-    setWeather(next);
-    toast(next === 'rain' ? 'It’s raining!' : next === 'snow' ? 'It’s snowing!' : 'The sky is clear again.');
+    setAutoWeather(!sky.auto);
+    toast(sky.auto ? 'The weather changes by itself now: sunny spells, rain and snow.' : 'No more rain or snow: the sky stays clear.');
   });
   $('#cycle-state').textContent = sky.cycle ? 'On' : 'Off';
-  setWeather(sky.weather);
+  $('#weather-state').textContent = sky.auto ? 'On' : 'Off';
+  drops.visible = false;
+  lookOfWeather('clear');
 
   /* menu */
   const menu = $('#menu'), moreBtn = $('#more');
@@ -3630,6 +3707,12 @@
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (W.on) { // walking: move keys, V for the view, Esc to stop
+      if (WALK_KEYS.has(e.code)) { held.add(e.code); e.preventDefault(); return; }
+      if (e.key === 'v' || e.key === 'V') { setWalkView(!W.third); return; }
+      if (e.key === 'Escape') { if (!menu.hidden) openMenu(false); else stopWalk(); return; }
+      if (e.key === 'p' || e.key === 'P') return; // no Peek while walking
+    } else if (e.key === 'w' || e.key === 'W') { startWalk(); held.add('KeyW'); return; }
     if (/^[0-9]$/.test(e.key)) {
       const idx = e.key === '0' ? 9 : Number(e.key) - 1;
       const list = TILES.filter((p) => p.cat === currentCat);
@@ -3640,6 +3723,246 @@
     else if (e.key === 'n' || e.key === 'N') toggleNight();
     else if (e.key === 'Escape') openMenu(false);
   });
+
+  /* ---------- walk: be the explorer ---------- */
+  // The Walk button puts the camera in the explorer's eyes (V: just behind them). Keys or the round
+  // pad move them, dragging looks around, and tapping still builds, erases and opens doors.
+  // Movement is simple block-game physics: the explorer is a small box that slides along walls,
+  // steps up onto anything up to one block high (so stairs just work), falls, jumps, swims and
+  // climbs ladders, and doors open as they reach them. Where the explorer stands is kept on this
+  // device only; it isn't part of the castle's save.
+  const PLAYER_KEY = 'stack-a-castle:player', VIEW_KEY = 'stack-a-castle:walkview';
+  const PR = 0.24, PH = 0.9, EYE = 0.78, SPEED = 3.2, RUN = 5.6, GRAV = 24, JUMP_V = 7.4, STEP = 1.02, LOOK = coarse ? 0.0065 : 0.005;
+  const WALK_THROUGH = new Set(['gate', 'door', 'rug', 'arch', 'ladder', 'water', 'flowers', 'candles', 'torch', 'flag',
+    'banner_red', 'banner_blue', 'banner_yellow', 'banner_green']);
+  const WALK_H = { bridge: 0.12, fence: 1.5, throne: 1 }; // heights that differ from TOP (fences can't be stepped over)
+  const BOX_H = {}, NO_BOX = [];
+  const boxH = (h) => BOX_H[h] || (BOX_H[h] = [[0, 0, 0, 1, h, 1]]);
+  const STAIR_BOX = [[0, 0.5, 0, 1, 1, 0.5], [0, 0.5, 0, 0.5, 1, 1], [0, 0.5, 0.5, 1, 1, 1], [0.5, 0.5, 0, 1, 1, 1]] // the high back half, by turn
+    .map((back) => [[0, 0, 0, 1, 0.5, 1], back]);
+  const W = {
+    on: false, third: store.get(VIEW_KEY) === 'behind', pos: new THREE.Vector3(), vx: 0, vz: 0, vy: 0, yaw: 0, pitch: -0.12,
+    ground: false, swim: false, ladder: false, lag: 0, walkT: 0, pad: { x: 0, y: 0 }, jumpBtn: false, fig: null, hit: null
+  };
+  const held = new Set();
+  function solidsAt(x, y, z) { // the solid parts of one square, as boxes in that square's own 0..1 space
+    if (isEarth(x, y, z)) return boxH(1);
+    const b = world.get(K(x, y, z));
+    if (!b || WALK_THROUGH.has(b.t)) return NO_BOX;
+    if (b.t === 'stairs') return STAIR_BOX[(b.r || 0) & 3];
+    return boxH(WALK_H[b.t] !== undefined ? WALK_H[b.t] : TOP[b.t] !== undefined ? TOP[b.t] : 1);
+  }
+  // What the explorer's box would touch standing at (px, py, pz): null if nothing, else the top of
+  // the highest and the bottom of the lowest solid part it overlaps.
+  function bump(px, py, pz, r = PR, h = PH) {
+    let top = -Infinity, bottom = Infinity;
+    const x0 = Math.floor(px - r), x1 = Math.floor(px + r), z0 = Math.floor(pz - r), z1 = Math.floor(pz + r);
+    for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) for (let y = Math.floor(py) - 1; y <= Math.floor(py + h); y++) {
+      for (const b of solidsAt(x, y, z)) {
+        if (px + r <= x + b[0] || px - r >= x + b[3] || pz + r <= z + b[2] || pz - r >= z + b[5] || py + h <= y + b[1] || py >= y + b[4]) continue;
+        if (y + b[4] > top) top = y + b[4];
+        if (y + b[1] < bottom) bottom = y + b[1];
+      }
+    }
+    return top === -Infinity ? null : { top, bottom };
+  }
+  function walkIn(t, py) { // the blocks of this kind the explorer's box is in (feet to chest)
+    const p = W.pos, out = [];
+    for (let x = Math.floor(p.x - PR); x <= Math.floor(p.x + PR); x++) for (let z = Math.floor(p.z - PR); z <= Math.floor(p.z + PR); z++) {
+      for (const y of new Set([Math.floor(py + 0.05), Math.floor(py + 0.5)])) { const b = world.get(K(x, y, z)); if (b && b.t === t) out.push(b); }
+    }
+    return out;
+  }
+  const playerIn = (x, y, z) => W.on && Math.abs(W.pos.x - (x + 0.5)) < 0.5 + PR && Math.abs(W.pos.z - (z + 0.5)) < 0.5 + PR && W.pos.y < y + 1 && W.pos.y + PH > y;
+  function moveFlat(axis, d) { // slide along x or z; step up onto low things when there's room
+    if (!d) return;
+    const p = W.pos, nx = p.x + (axis === 'x' ? d : 0), nz = p.z + (axis === 'z' ? d : 0);
+    const hit = bump(nx, p.y, nz);
+    if (!hit) { p.x = nx; p.z = nz; return; }
+    const rise = hit.top - p.y;
+    if ((W.ground || W.swim || W.ladder) && rise > 0 && rise <= (W.swim ? 1.3 : STEP) && !bump(nx, hit.top + 0.001, nz) && !bump(p.x, hit.top + 0.001, p.z)) {
+      p.x = nx; p.z = nz; p.y = hit.top + 0.001; W.lag -= rise; W.vy = Math.max(W.vy, 0); // a stair, a block, a bed: up we go
+      return;
+    }
+    let lo = 0, hi = d; // move right up to the wall
+    for (let i = 0; i < 7; i++) { const m = (lo + hi) / 2; if (bump(p.x + (axis === 'x' ? m : 0), p.y, p.z + (axis === 'z' ? m : 0))) hi = m; else lo = m; }
+    if (axis === 'x') p.x += lo; else p.z += lo;
+  }
+  function moveUp(d) {
+    const p = W.pos, hit = bump(p.x, p.y + d, p.z);
+    if (!hit) { p.y += d; W.ground = false; return; }
+    if (d <= 0) { p.y = Math.max(p.y + d, hit.top); W.vy = 0; W.ground = true; } // landed
+    else { W.vy = 0; } // bumped a ceiling
+  }
+  function stepWalk(dt, t) {
+    const p = W.pos;
+    // what the keys, pad and jump button ask for
+    let f = 0, s = 0;
+    if (held.has('KeyW') || held.has('ArrowUp')) f += 1;
+    if (held.has('KeyS') || held.has('ArrowDown')) f -= 1;
+    if (held.has('KeyD')) s += 1;
+    if (held.has('KeyA')) s -= 1;
+    if (held.has('ArrowLeft')) W.yaw += 2.2 * dt;
+    if (held.has('ArrowRight')) W.yaw -= 2.2 * dt;
+    f -= W.pad.y; s += W.pad.x;
+    const len = Math.hypot(f, s);
+    if (len > 1) { f /= len; s /= len; }
+    const jump = held.has('Space') || W.jumpBtn, run = held.has('ShiftLeft') || held.has('ShiftRight') || Math.hypot(W.pad.x, W.pad.y) > 0.97;
+    // stuck inside something (a block placed or a castle loaded on top of us)? pop up out of it
+    const inside = bump(p.x, p.y, p.z);
+    if (inside && inside.top <= MAXY + 1) { p.y = inside.top + 0.001; W.vy = 0; }
+    W.swim = walkIn('water', p.y + 0.2).length > 0;
+    W.ladder = walkIn('ladder', p.y).length > 0;
+    const sp = (run ? RUN : SPEED) * (W.swim ? 0.55 : 1);
+    const tx = (-Math.sin(W.yaw) * f + Math.cos(W.yaw) * s) * sp, tz = (-Math.cos(W.yaw) * f - Math.sin(W.yaw) * s) * sp;
+    const k = Math.min(1, dt * 14);
+    W.vx += (tx - W.vx) * k; W.vz += (tz - W.vz) * k;
+    if (W.ladder) W.vy = f > 0.2 || jump ? 2.6 : W.ground ? 0 : -1.6; // climb while walking forward; slide down slowly otherwise
+    else if (W.swim) { W.vy = Math.max(-2.2, W.vy - 7 * dt); if (jump) W.vy = Math.min(2.8, W.vy + 16 * dt); }
+    else { W.vy = Math.max(-20, W.vy - GRAV * dt); if (jump && W.ground) { W.vy = JUMP_V; W.ground = false; } }
+    // move in small steps so nothing thin gets skipped
+    const n = Math.max(1, Math.ceil(Math.max(Math.abs(W.vx), Math.abs(W.vz), Math.abs(W.vy)) * dt / 0.2));
+    for (let i = 0; i < n; i++) { moveFlat('x', W.vx * dt / n); moveFlat('z', W.vz * dt / n); moveUp(W.vy * dt / n); }
+    if (!W.ground && W.vy <= 0 && bump(p.x, p.y - 0.03, p.z)) W.ground = true;
+    p.x = Math.max(-half + PR, Math.min(half - PR, p.x)); p.z = Math.max(-half + PR, Math.min(half - PR, p.z));
+    p.y = Math.min(p.y, MAXY + 2);
+    for (const d of walkIn('door', p.y)) if (!d.open) setDoor(d, true, true); // doors open as you reach them
+    // the camera: the explorer's eyes, or a little way behind them
+    W.lag += (0 - W.lag) * Math.min(1, dt * 12);
+    const moving = Math.hypot(W.vx, W.vz) > 0.3 && W.ground;
+    if (moving) W.walkT += dt * Math.hypot(W.vx, W.vz);
+    const bob = moving && !reduceMotion ? Math.sin(W.walkT * 3.4) * 0.025 : 0;
+    camera.rotation.set(W.pitch, W.yaw, 0);
+    const head = vWalk.set(p.x, p.y + EYE + W.lag + bob, p.z);
+    if (!W.third) camera.position.copy(head);
+    else {
+      const dx = Math.sin(W.yaw) * Math.cos(W.pitch), dy = -Math.sin(W.pitch), dz = Math.cos(W.yaw) * Math.cos(W.pitch); // backwards
+      let d = 0.3;
+      while (d < 3.2 && !bump(head.x + dx * (d + 0.1), head.y + dy * (d + 0.1) - 0.12, head.z + dz * (d + 0.1), 0.12, 0.24)) d += 0.1; // stop short of walls
+      camera.position.set(head.x + dx * d, head.y + dy * d, head.z + dz * d);
+    }
+    placeFigure(bob);
+    W.fig.visible = W.third;
+    controls.target.set(p.x, Math.max(0, Math.min(10, p.y)), p.z); // shadows follow the explorer
+  }
+  const vWalk = new THREE.Vector3();
+  function makeFigure() {
+    if (W.fig) return;
+    W.fig = makeCharacter('player');
+    const hit = new THREE.Mesh(HIT_SIZE.player[0], M.hit);
+    hit.visible = false; hit.position.y = HIT_SIZE.player[1];
+    hit.userData.char = { kind: 'player', obj: W.fig, hit };
+    W.fig.add(hit); W.hit = hit; charHits.push(hit);
+    scene.add(W.fig);
+  }
+  function placeFigure(bob) {
+    W.fig.position.set(W.pos.x, W.pos.y + W.lag + (bob || 0) * 0.6, W.pos.z);
+    W.fig.rotation.y = W.yaw + Math.PI;
+  }
+  function saveSpot() { store.set(PLAYER_KEY, JSON.stringify({ x: +W.pos.x.toFixed(2), y: +W.pos.y.toFixed(2), z: +W.pos.z.toFixed(2), yaw: +W.yaw.toFixed(3) })); }
+  function startSpot() { // where you left the explorer if that's near what you're looking at, else where you're looking
+    const tg = controls.target;
+    let saved = null;
+    try { saved = JSON.parse(store.get(PLAYER_KEY) || 'null'); } catch (e) { saved = null; }
+    if (saved && [saved.x, saved.y, saved.z].every(Number.isFinite) && Math.abs(saved.x) < half && Math.abs(saved.z) < half && Math.hypot(saved.x - tg.x, saved.z - tg.z) < 30) {
+      W.pos.set(saved.x, saved.y, saved.z);
+      W.yaw = Number.isFinite(saved.yaw) ? saved.yaw : 0;
+    } else {
+      const cx = Math.floor(tg.x), cz = Math.floor(tg.z), from = Math.min(MAXY - 1, Math.floor(tg.y) + 1);
+      let spot = null;
+      for (let r = 0; r <= 8 && !spot; r++) for (let dx = -r; dx <= r && !spot; dx++) for (let dz = -r; dz <= r && !spot; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== r || !inBounds(cx + dx, 0, cz + dz)) continue;
+        const y = findStand(cx + dx, from, cz + dz);
+        if (y !== null) spot = { x: cx + dx, y, z: cz + dz };
+      }
+      if (!spot) spot = { x: cx, y: 0, z: cz };
+      W.pos.set(spot.x + 0.5, footY(spot.x, spot.y, spot.z), spot.z + 0.5);
+      W.yaw = Math.atan2(camera.position.x - tg.x, camera.position.z - tg.z); // face the way the camera was looking
+    }
+    for (let i = 0; i < 40; i++) { const h = bump(W.pos.x, W.pos.y, W.pos.z); if (!h) break; W.pos.y = h.top + 0.001; }
+    W.pitch = -0.12; W.vx = W.vz = W.vy = 0; W.lag = 0;
+  }
+  const walkBtn = $('#walk'), walkView = $('#walk-view');
+  function showWalkView() {
+    walkView.setAttribute('aria-pressed', W.third ? 'true' : 'false');
+    $('#walk-view-label').textContent = W.third ? 'Behind' : 'Eyes';
+  }
+  function setWalkView(third) { W.third = third; store.set(VIEW_KEY, third ? 'behind' : 'eyes'); showWalkView(); }
+  function startWalk() {
+    if (W.on) return;
+    openMenu(false);
+    if (peek) setPeek(0);
+    if (controls.autoRotate) { controls.autoRotate = false; $('#spin-state').textContent = 'Off'; }
+    makeFigure();
+    glide.t0 = 0; // stop any Peek camera glide
+    startSpot();
+    W.on = true;
+    controls.enabled = false;
+    camera.rotation.order = 'YXZ';
+    ghost.visible = false; canvas.style.cursor = '';
+    document.documentElement.classList.add('is-walking');
+    walkBtn.setAttribute('aria-pressed', 'true');
+    $('#walk-label').textContent = 'Done';
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); // so Space jumps instead of pressing a button
+    layout();
+    hideHint();
+    toast(coarse ? 'Move with the round pad, drag to look around, and tap the arrow to jump. Tap Done to stop.'
+      : 'Walk with W A S D or the arrow keys, drag to look around, Space to jump, Shift to run, V to look from behind. Esc to stop.');
+  }
+  function stopWalk() {
+    if (!W.on) return;
+    W.on = false;
+    held.clear(); W.pad.x = W.pad.y = 0; W.jumpBtn = false; resetPad();
+    saveSpot();
+    camera.rotation.order = 'XYZ';
+    controls.enabled = true;
+    const p = W.pos; // the building camera looks at the explorer from behind and above
+    controls.target.set(p.x, Math.max(0, Math.min(10, p.y + 0.5)), p.z);
+    camera.position.set(p.x + Math.sin(W.yaw) * 14, controls.target.y + 9, p.z + Math.cos(W.yaw) * 14);
+    controls.update();
+    W.lag = 0; placeFigure(0); W.fig.visible = true;
+    // stopped indoors? Peek opens that floor, so you can see where you left the explorer
+    const fx = Math.floor(p.x), fy = Math.floor(p.y + 0.01), fz = Math.floor(p.z);
+    let roofed = false;
+    for (let y = fy + 1; y <= Math.min(MAXY, fy + 8) && !roofed; y++) roofed = world.has(K(fx, y, fz));
+    if (roofed) { const h = Math.max(4, Math.ceil((fy + 1) / 4) * 4); setPeek(h); if (!reduceMotion) lookDownInto(h); }
+    document.documentElement.classList.remove('is-walking');
+    walkBtn.setAttribute('aria-pressed', 'false');
+    $('#walk-label').textContent = 'Walk';
+    layout();
+  }
+  walkBtn.addEventListener('click', () => (W.on ? stopWalk() : startWalk()));
+  walkView.addEventListener('click', () => { setWalkView(!W.third); walkView.blur(); });
+  showWalkView();
+  // the round pad (phones and tablets): drag the knob the way you want to go
+  const pad = $('#walk-pad'), knob = $('#walk-knob');
+  let padId = null;
+  function resetPad() { padId = null; W.pad.x = W.pad.y = 0; knob.style.transform = ''; }
+  function padMove(e) {
+    const r = pad.getBoundingClientRect(), max = r.width * 0.36;
+    let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const d = Math.hypot(dx, dy);
+    if (d > max) { dx *= max / d; dy *= max / d; }
+    W.pad.x = dx / max; W.pad.y = dy / max;
+    knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+  }
+  pad.addEventListener('pointerdown', (e) => { e.preventDefault(); padId = e.pointerId; pad.setPointerCapture(e.pointerId); padMove(e); });
+  pad.addEventListener('pointermove', (e) => { if (e.pointerId === padId) padMove(e); });
+  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) pad.addEventListener(ev, (e) => { if (e.pointerId === padId) resetPad(); });
+  const jumpBtn = $('#walk-jump');
+  jumpBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); W.jumpBtn = true; });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) jumpBtn.addEventListener(ev, () => { W.jumpBtn = false; });
+  const WALK_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'ShiftLeft', 'ShiftRight']);
+  window.addEventListener('keyup', (e) => held.delete(e.code));
+  window.addEventListener('blur', () => { held.clear(); resetPad(); W.jumpBtn = false; });
+  (function showFigure() { // the explorer waits where you left them
+    let saved = null;
+    try { saved = JSON.parse(store.get(PLAYER_KEY) || 'null'); } catch (e) { saved = null; }
+    if (!saved || ![saved.x, saved.y, saved.z].every(Number.isFinite)) return;
+    makeFigure();
+    W.pos.set(saved.x, saved.y, saved.z); W.yaw = Number.isFinite(saved.yaw) ? saved.yaw : 0;
+    placeFigure(0);
+  })();
 
   /* ---------- picking ---------- */
   const raycaster = new THREE.Raycaster();
@@ -3714,6 +4037,7 @@
   function act(clientX, clientY, forceErase) {
     const p = pick(clientX, clientY);
     if (!p) return;
+    if (p.char && p.char.kind === 'player') { if (!W.on && !(mode === 'erase' || forceErase)) startWalk(); return; } // tap the explorer to walk as them
     if (p.char) {
       if (mode === 'erase' || forceErase) { removeChar(p.char, { record: true }); blip('remove'); changed(); hideHint(); }
       else poke(p.char);
@@ -3736,6 +4060,7 @@
       if (y !== null && addChar(selected, c.x, y, c.z, { record: true, pop: true })) { voice(selected); changed(); hideHint(); }
     } else {
       const c = p.place;
+      if (W.on && playerIn(c.x, c.y, c.z) && !WALK_THROUGH.has(selected)) return; // not on top of yourself
       if (canHold(c.x, c.y, c.z) && !world.has(K(c.x, c.y, c.z)) && !(peek && c.y >= peek)) {
         addBlock(c.x, c.y, c.z, selected, rotFor(selected), { record: true, pop: true });
         natureAfter([[c.x, c.y, c.z]]);
@@ -3786,6 +4111,12 @@
       const lim = e.pointerType === 'mouse' ? 5 : 10;
       if (Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > lim) { gesture.moved = true; ghost.visible = false; }
     }
+    if (W.on && gesture && e.pointerId === gesture.id && gesture.moved && !gesture.multi) { // walking: drag to look around
+      const lx = gesture.lx === undefined ? gesture.x : gesture.lx, ly = gesture.ly === undefined ? gesture.y : gesture.ly;
+      W.yaw -= (e.clientX - lx) * LOOK;
+      W.pitch = Math.max(-1.45, Math.min(1.45, W.pitch - (e.clientY - ly) * LOOK));
+      gesture.lx = e.clientX; gesture.ly = e.clientY;
+    }
     if (e.pointerType === 'mouse') {
       if (e.target === canvas && !(gesture && gesture.moved)) { lastMouse = { x: e.clientX, y: e.clientY }; updateGhost(e.clientX, e.clientY); }
       else if (e.target !== canvas) { lastMouse = null; ghost.visible = false; }
@@ -3816,7 +4147,7 @@
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    camera.fov = w / h < 1 ? 55 : 42;
+    camera.fov = W.on ? (w / h < 1 ? 75 : 68) : w / h < 1 ? 55 : 42; // wider through the explorer's eyes
     const a = app.getBoundingClientRect();
     const topH = topbar.getBoundingClientRect().bottom - a.top;
     const botH = a.bottom - dock.getBoundingClientRect().top;
@@ -3826,6 +4157,7 @@
     tabFade();
   }
   function resetView() {
+    if (W.on) stopWalk();
     controls.target.set(0, 1.4, 0);
     const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2), tanH = tanV * camera.aspect;
     const dist = Math.min(58, Math.max(7.8 / tanH, 7.6 / tanV));
@@ -3872,14 +4204,17 @@
     const raw = clock.getDelta(), dt = Math.min(raw, 0.05);
     const t = clock.elapsedTime;
     watchSpeed(raw);
-    controls.update();
-    controls.target.x = Math.max(-half, Math.min(half, controls.target.x));
-    controls.target.z = Math.max(-half, Math.min(half, controls.target.z));
-    controls.target.y = Math.max(0, Math.min(10, controls.target.y));
+    if (W.on) stepWalk(dt, t);
+    else {
+      controls.update();
+      controls.target.x = Math.max(-half, Math.min(half, controls.target.x));
+      controls.target.z = Math.max(-half, Math.min(half, controls.target.z));
+      controls.target.y = Math.max(0, Math.min(10, controls.target.y));
+    }
     sun.position.copy(controls.target).add(sunOffset);
     sun.target.position.copy(controls.target);
     // zoomed far out over a big island, move the near limit out too, so distant surfaces don't flicker
-    const near = Math.min(4, Math.max(0.1, camera.position.distanceTo(controls.target) / 600));
+    const near = W.on ? 0.05 : Math.min(4, Math.max(0.1, camera.position.distanceTo(controls.target) / 600));
     if (Math.abs(near - camera.near) > camera.near * 0.1) { camera.near = near; camera.updateProjectionMatrix(); }
     stepSky(dt);
     stepWeather(dt, t);
@@ -3912,7 +4247,7 @@
       sizeIsland(shownHalf);
     }
     if (nature.queue.size || nature.dirty) natureStep(performance.now());
-    if (glide.t0) { // the camera gliding to look down into the rooms (Peek)
+    if (glide.t0 && !W.on) { // the camera gliding to look down into the rooms (Peek)
       const k = Math.min(1, (performance.now() - glide.t0) / 700), e = k * k * (3 - 2 * k);
       camera.position.lerpVectors(glide.from, glide.to, e);
       controls.target.lerpVectors(glide.tFrom, glide.tTo, e);

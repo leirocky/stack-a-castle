@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Pirata+One&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=1.3.4">
+  <link rel="stylesheet" href="css/style.css?v=1.3.5">
 </head>
 <body>
 <div id="app">
@@ -69,9 +69,9 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17h18"/><path d="M7 17a5 5 0 0 1 10 0"/><path d="M12 6V4M5.6 9.6 4.2 8.2M18.4 9.6l1.4-1.4"/><path d="M8 21h8"/></svg>
             <span>Day and night</span><span class="state" id="cycle-state">Off</span>
           </button>
-          <button type="button" role="menuitem" id="m-weather" title="Clear, rain or snow">
+          <button type="button" role="menuitem" id="m-weather" title="Weather that changes by itself: sunny spells, rain and snow">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 15a4 4 0 0 1 .5-8 5.5 5.5 0 0 1 10.5 1.5A3.3 3.3 0 0 1 17.5 15z"/><path d="M8 18l-1 2M12 18l-1 2M16 18l-1 2"/></svg>
-            <span>Weather</span><span class="state" id="weather-state">Clear</span>
+            <span>Weather</span><span class="state" id="weather-state">On</span>
           </button>
           <button type="button" role="menuitem" id="m-sound">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
@@ -95,7 +95,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="m6 7 1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>
             <span id="clear-label">Clear everything</span>
           </button>
-          <p class="menu-version">Stack-a-Castle v1.3.4</p>
+          <p class="menu-version">Stack-a-Castle v1.3.5</p>
         </div>
       </div>
     </header>
@@ -103,9 +103,23 @@
     <div class="bottom">
       <p class="hint" id="hint">Drag to spin · Pinch to zoom · Tap to build</p>
       <nav class="dock" id="dock" aria-label="Building tools">
-        <button class="peek-btn" id="peek" type="button" aria-pressed="false" title="Peek inside: hide the floors above, one at a time (P)">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
-          <span id="peek-label">Peek</span>
+        <div class="float-btns">
+          <button class="peek-btn walk-view" id="walk-view" type="button" aria-pressed="false" title="Look through the explorer's eyes, or from just behind them (V)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5h3.2l2-2.5h7.6l2 2.5H21V19H3z"/><circle cx="12" cy="13" r="3.4"/></svg>
+            <span id="walk-view-label">Eyes</span>
+          </button>
+          <button class="peek-btn" id="walk" type="button" aria-pressed="false" title="Walk around as the explorer (W)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13.5" cy="4.5" r="2"/><path d="M12 8.5 10 14l3.2 2.6.9 4.9"/><path d="M10 14l-2.4 6.5"/><path d="M12 8.5 8.6 10.6l-1 3"/><path d="M12.1 8.7l2.8 3 3 .8"/></svg>
+            <span id="walk-label">Walk</span>
+          </button>
+          <button class="peek-btn" id="peek" type="button" aria-pressed="false" title="Peek inside: hide the floors above, one at a time (P)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span id="peek-label">Peek</span>
+          </button>
+        </div>
+        <div class="walk-pad" id="walk-pad" aria-hidden="true"><div class="walk-knob" id="walk-knob"></div></div>
+        <button class="walk-jump" id="walk-jump" type="button" aria-label="Jump">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6"/><path d="M6 11.5 12 5.5l6 6"/></svg>
         </button>
         <div class="modes">
           <button class="mode-btn build" id="mode-build" type="button" aria-pressed="true" title="Build (B)">
@@ -169,6 +183,10 @@
           <p><b>Dig</b> <span class="for-touch">Pick Dig in the Nature tab, then tap the grass to dig a hole. Water flows into holes!</span><span class="for-mouse">Pick Dig in the Nature tab, then click the grass to dig a hole. Water flows into holes!</span></p>
         </li>
         <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13.5" cy="4.5" r="2"/><path d="M12 8.5 10 14l3.2 2.6.9 4.9"/><path d="M10 14l-2.4 6.5"/><path d="M12 8.5 8.6 10.6l-1 3"/><path d="M12.1 8.7l2.8 3 3 .8"/></svg>
+          <p><b>Walk</b> <span class="for-touch">Tap Walk to be the explorer. Move with the round pad, drag to look around, and tap the arrow to jump. Tap Done to stop.</span><span class="for-mouse">Click Walk (or press W) to be the explorer. Move with W A S D or the arrow keys, drag to look around, Space to jump, Shift to run, V to look from behind. Esc to stop.</span></p>
+        </li>
+        <li>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
           <p><b>Peek</b> <span class="for-touch">Tap the eye above the tray to hide the floors above and look into the rooms, one floor at a time.</span><span class="for-mouse">Click the eye above the tray (or press P) to hide the floors above and look into the rooms, one floor at a time.</span></p>
         </li>
@@ -196,7 +214,7 @@
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script defer src="js/firebase-config.js?v=1.3.4"></script>
-<script defer src="js/game.js?v=1.3.4"></script>
+<script defer src="js/firebase-config.js?v=1.3.5"></script>
+<script defer src="js/game.js?v=1.3.5"></script>
 </body>
 </html>

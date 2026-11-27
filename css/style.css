@@ -325,8 +325,8 @@ button:focus-visible { outline: 3px solid var(--royal); outline-offset: 2px; }
 .choice.primary small { color: rgba(255, 255, 255, 0.82); }
 
 /* Peek: a round button sitting on the top-right corner of the dock */
+.float-btns { position: absolute; right: 8px; bottom: calc(100% + 10px); display: flex; gap: 8px; }
 .peek-btn {
-  position: absolute; right: 8px; bottom: calc(100% + 10px);
   display: flex; align-items: center; gap: 6px;
   height: 44px; padding: 0 14px 0 11px;
   border: 1px solid var(--line); border-radius: 999px;
@@ -339,6 +339,37 @@ button:focus-visible { outline: 3px solid var(--royal); outline-offset: 2px; }
 .peek-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .peek-btn[aria-pressed="true"] { background: var(--royal); color: #fff; border-color: transparent; }
 .peek-btn:active { transform: scale(0.96); }
+
+/* Walk: be the explorer (the pad and jump button show on touch screens) */
+.walk-view, .walk-pad, .walk-jump { display: none; }
+html.is-walking .walk-view { display: flex; }
+html.is-walking #peek { display: none; }
+html.is-walking .hint { visibility: hidden; }
+html.is-walking.is-touch .walk-pad { display: block; }
+html.is-walking.is-touch .walk-jump { display: flex; }
+.walk-pad {
+  position: absolute; left: 10px; bottom: calc(100% + 14px);
+  width: 124px; height: 124px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3); border: 2px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 18px rgba(20, 30, 70, 0.18);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  touch-action: none;
+}
+.walk-knob {
+  position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px;
+  border-radius: 50%; background: var(--panel); box-shadow: 0 4px 12px rgba(20, 30, 70, 0.25);
+  pointer-events: none;
+}
+.walk-jump {
+  position: absolute; right: 10px; bottom: calc(100% + 66px);
+  width: 64px; height: 64px; border-radius: 50%;
+  align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  box-shadow: 0 6px 18px rgba(20, 30, 70, 0.18);
+  touch-action: none; cursor: pointer;
+}
+.walk-jump svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.walk-jump:active { transform: scale(0.94); background: var(--royal); color: #fff; }
 
 /* "How to play" card (first visit, and from the menu) */
 .steps { margin: 2px 0 4px; padding: 0; list-style: none; display: grid; gap: 10px; }
