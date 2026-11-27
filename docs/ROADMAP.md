@@ -68,8 +68,22 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 | New pieces: arch, bridge, ladder, well, banner (in colors), flower bed (the bench arrived early, in v1.1's Furniture tab) | M |
 | Automatic day–night cycle (optional), with a sunrise and sunset | S |
 | Weather: rain and snow you can turn on | S |
+| Nature that behaves like nature: water flows into holes, lava flows and cools into stone, ice and snow melt, sand falls (details below) | L |
 
-**Done when:** an existing castle opens on the bigger island, which can grow to 1000 × 1000 and back with the size kept everywhere (done); the new pieces and characters are in their tabs; characters visibly use paths and benches; and weather and the cycle can be switched on and off.
+**Nature effects, as planned:**
+
+- **Water** runs down and sideways into empty squares next to it: it pours off the edge of a tower, fills a hole dug beside a moat, and stops after a few squares on flat ground, so it can't flood the island.
+- **Lava** flows the same way, but slower and not as far. Where lava touches water, it cools into stone.
+- **Ice and snow** melt into water when something hot is next to them: lava, a torch, a fireplace, candles or a lamp.
+- **Sand** falls down when nothing is holding it up.
+- Effects start from something a player builds or removes, so a castle never changes by itself just from being opened, and existing moats and ice stay as they are.
+- One Undo takes back a change together with everything it set off.
+- A **Nature** switch in the ⋯ menu turns the effects off for anyone who wants things to stay exactly where they put them.
+- Flowing water and lava are saved as ordinary blocks, so the save format doesn't change.
+
+Many block-building games have flowing water and lava; ours will follow the same ideas with its own rules and look.
+
+**Done when:** an existing castle opens on the bigger island, which can grow to 1000 × 1000 and back with the size kept everywhere (done); the new pieces and characters are in their tabs; characters visibly use paths and benches; weather and the cycle can be switched on and off; and water, lava, ice, snow and sand behave as described above, with Undo and the Nature switch working.
 
 ## v1.4 — Many castles
 
