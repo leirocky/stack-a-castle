@@ -242,6 +242,18 @@
     g.closePath(); g.fill();
     return c;
   }
+  function bannerCanvas(col) { // a hanging banner with a swallowtail, a gold trim and a little castle on it
+    const W = 64, H = 96, c = cv(W, H), g = c.getContext('2d');
+    const shape = (inset) => { g.beginPath(); g.moveTo(inset, inset); g.lineTo(W - inset, inset); g.lineTo(W - inset, H - inset); g.lineTo(W / 2, H - 16 + inset * 0.6); g.lineTo(inset, H - inset); g.closePath(); };
+    g.fillStyle = '#e9b43c'; shape(0); g.fill();
+    g.fillStyle = col; shape(4); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.14)'; g.fillRect(6, 6, 8, H - 26);
+    g.fillStyle = '#fbf6e6'; // the castle
+    g.fillRect(20, 40, 24, 18); for (const x of [20, 28, 36]) g.fillRect(x, 34, 6, 6);
+    g.fillStyle = col; g.beginPath(); g.moveTo(29, 58); g.lineTo(29, 51); g.arc(32, 51, 3, Math.PI, 0); g.lineTo(35, 58); g.closePath(); g.fill();
+    g.fillStyle = '#e9b43c'; g.beginPath(); g.moveTo(32, 18); g.lineTo(35, 25); g.lineTo(32, 28); g.lineTo(29, 25); g.closePath(); g.fill();
+    return c;
+  }
   function glowCanvas() {
     const S = 64, c = cv(S, S), g = c.getContext('2d');
     const gr = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
@@ -489,6 +501,17 @@
     geo.computeVertexNormals();
     return boxUV(geo);
   }
+  function openArchGeometry() { // a freestanding arch: two pillars and a curved top, open underneath
+    const s = new THREE.Shape(), r = 0.33, spring = 0.08;
+    s.moveTo(-0.5, -0.5); s.lineTo(-r, -0.5); s.lineTo(-r, spring);
+    s.absarc(0, spring, r, Math.PI, 0, true);
+    s.lineTo(r, -0.5); s.lineTo(0.5, -0.5); s.lineTo(0.5, 0.5); s.lineTo(-0.5, 0.5); s.lineTo(-0.5, -0.5);
+    let geo = new THREE.ExtrudeGeometry(s, { depth: 0.36, bevelEnabled: false, curveSegments: 16 });
+    geo.translate(0, 0, -0.18);
+    if (geo.index) geo = geo.toNonIndexed();
+    geo.computeVertexNormals();
+    return boxUV(geo);
+  }
   function battlementGeometry() {
     const parts = [new THREE.BoxGeometry(1, 0.5, 1).translate(0, -0.25, 0)];
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) parts.push(new THREE.BoxGeometry(0.32, 0.44, 0.32).translate(sx * 0.34, 0.22, sz * 0.34));
@@ -625,6 +648,14 @@
   M.bookshelfFaces = [M.wood, M.wood, M.wood, M.wood, M.books, M.books];
   M.rugFaces = [M.rugEdge, M.rugEdge, M.rug, M.rugEdge, M.rugEdge, M.rugEdge];
   M.barrelFaces = [M.wood, M.rings, M.rings];
+  const BANNERS = { banner_red: '#c8372d', banner_blue: '#2d4cc0', banner_yellow: '#e8a917', banner_green: '#2f8f4e' };
+  for (const id in BANNERS) {
+    const t = tex(bannerCanvas(BANNERS[id]));
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    M[id] = std({ map: t, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.85 });
+    M[id + 'Depth'] = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: t, alphaTest: 0.5 });
+  }
+  M.wellInside = std({ map: T.cobble, side: THREE.BackSide });
 
   /* blocks for landmarks */
   const [clockC, clockE] = clockCanvases();
@@ -730,7 +761,32 @@
     bloomA: merge([Sph(0.05).scale(1, 0.6, 1).translate(0.075, -0.05, 0.045), Sph(0.022).translate(0.075, -0.025, 0.045)]),
     bloomB: merge([Sph(0.05).scale(1, 0.6, 1).translate(-0.08, -0.07, -0.03), Sph(0.022).translate(-0.08, -0.045, -0.03)]),
     bloomC: merge([Sph(0.05).scale(1, 0.6, 1).translate(0, -0.03, -0.075), Sph(0.022).translate(0, -0.005, -0.075)]),
-    rug: Box(0.98, 0.025, 0.98).translate(0, -0.4875, 0)
+    rug: Box(0.98, 0.025, 0.98).translate(0, -0.4875, 0),
+    openArch: openArchGeometry(),
+    bridgeDeck: boxUV(merge([Box(1, 0.12, 1).translate(0, -0.44, 0)])),
+    bridgeRails: boxUV(merge([].concat(...[-1, 1].map((sx) => [
+      Box(0.08, 0.52, 0.08).translate(sx * 0.44, -0.14, 0.42), Box(0.08, 0.52, 0.08).translate(sx * 0.44, -0.14, -0.42),
+      Box(0.06, 0.06, 1).translate(sx * 0.44, 0.1, 0), Box(0.05, 0.05, 1).translate(sx * 0.44, -0.12, 0)])))),
+    ladder: boxUV(merge([Box(0.07, 1, 0.07).translate(0.3, 0, -0.42), Box(0.07, 1, 0.07).translate(-0.3, 0, -0.42)]
+      .concat([-0.375, -0.125, 0.125, 0.375].map((y) => Box(0.6, 0.05, 0.05).translate(0, y, -0.42))))),
+    wellWall: new THREE.CylinderGeometry(0.42, 0.44, 0.45, 18, 1, true).translate(0, -0.275, 0),
+    wellInner: new THREE.CylinderGeometry(0.32, 0.32, 0.3, 18, 1, true).translate(0, -0.2, 0),
+    wellRim: new THREE.RingGeometry(0.32, 0.43, 18).rotateX(-Math.PI / 2).translate(0, -0.05, 0),
+    wellWater: new THREE.CircleGeometry(0.32, 18).rotateX(-Math.PI / 2).translate(0, -0.16, 0),
+    wellFrame: boxUV(merge([Box(0.07, 0.72, 0.07).translate(0.38, 0.18, 0), Box(0.07, 0.72, 0.07).translate(-0.38, 0.18, 0),
+      Cyl(0.03, 0.03, 0.76, 8).rotateZ(Math.PI / 2).translate(0, 0.3, 0)])),
+    wellRoof: merge([Box(0.98, 0.04, 0.42).rotateX(0.62).translate(0, 0.6, 0.16), Box(0.98, 0.04, 0.42).rotateX(-0.62).translate(0, 0.6, -0.16)]),
+    bucket: merge([Cyl(0.07, 0.055, 0.1, 10).translate(0, 0.05, 0), Box(0.01, 0.22, 0.01).translate(0, 0.19, 0)]),
+    bannerPole: merge([Cyl(0.022, 0.022, 0.78, 8).rotateZ(Math.PI / 2).translate(0, 0.43, -0.42), Sph(0.04).translate(0.4, 0.43, -0.42), Sph(0.04).translate(-0.4, 0.43, -0.42)]),
+    bannerCloth: new THREE.PlaneGeometry(0.6, 0.86).translate(0, -0.01, -0.4),
+    bedBox: boxUV(merge([Box(1, 0.36, 0.1).translate(0, -0.32, 0.45), Box(1, 0.36, 0.1).translate(0, -0.32, -0.45),
+      Box(0.1, 0.36, 0.8).translate(0.45, -0.32, 0), Box(0.1, 0.36, 0.8).translate(-0.45, -0.32, 0)])),
+    bedSoil: Box(0.8, 0.3, 0.8).translate(0, -0.33, 0),
+    bedLeaves: merge([[-0.25, -0.25], [0.05, -0.28], [0.28, -0.2], [-0.28, 0.05], [0, 0], [0.27, 0.06], [-0.22, 0.27], [0.06, 0.28], [0.3, 0.3]]
+      .map(([x, z]) => new THREE.IcosahedronGeometry(0.09).translate(x, -0.12, z))),
+    bedBloomA: merge([[-0.25, -0.22], [0.27, 0.08], [0.05, 0.27]].map(([x, z]) => Sph(0.06).scale(1, 0.6, 1).translate(x, -0.03, z))),
+    bedBloomB: merge([[0.06, -0.25], [-0.27, 0.07], [0.3, 0.3]].map(([x, z]) => Sph(0.06).scale(1, 0.6, 1).translate(x, -0.03, z))),
+    bedBloomC: merge([[0.28, -0.18], [0, 0.02], [-0.2, 0.28]].map(([x, z]) => Sph(0.06).scale(1, 0.6, 1).translate(x, -0.03, z)))
   });
 
   /* ---------- pieces ---------- */
@@ -745,6 +801,11 @@
     { id: 'flag', name: 'Flag', swatch: '#c8372d', cat: 'castle' },
     { id: 'torch', name: 'Torch', swatch: '#ffb547', cat: 'castle' },
     { id: 'gold', name: 'Gold', swatch: '#f3bb30', cat: 'castle' },
+    { id: 'banner_red', name: 'Red banner', swatch: '#c8372d', cat: 'castle' },
+    { id: 'banner_blue', name: 'Blue banner', swatch: '#2d4cc0', cat: 'castle' },
+    { id: 'banner_yellow', name: 'Gold banner', swatch: '#e8a917', cat: 'castle' },
+    { id: 'banner_green', name: 'Green banner', swatch: '#2f8f4e', cat: 'castle' },
+    { id: 'arch', name: 'Arch', swatch: '#a7aab4', cat: 'castle' },
     { id: 'grass', name: 'Grass', swatch: '#78c257', cat: 'nature' },
     { id: 'dirt', name: 'Dirt', swatch: '#8b5a3a', cat: 'nature' },
     { id: 'sand', name: 'Sand', swatch: '#e2cd93', cat: 'nature' },
@@ -756,6 +817,7 @@
     { id: 'snow', name: 'Snow', swatch: '#f1f5fb', cat: 'nature' },
     { id: 'ice', name: 'Ice', swatch: '#9fd3ee', cat: 'nature' },
     { id: 'lava', name: 'Lava', swatch: '#ff7a1a', cat: 'nature' },
+    { id: 'flowerbed', name: 'Flower bed', swatch: '#f27fa0', cat: 'nature' },
     { id: 'wood', name: 'Wood', swatch: '#ad7742', cat: 'build' },
     { id: 'glass', name: 'Glass', swatch: '#cfe8ff', cat: 'build' },
     { id: 'slab', name: 'Slab', swatch: '#a7aab4', cat: 'build' },
@@ -773,6 +835,8 @@
     { id: 'black', name: 'Black', swatch: '#2b2d35', cat: 'build' },
     { id: 'iron', name: 'Iron', swatch: '#6e5846', cat: 'build' },
     { id: 'clock', name: 'Clock', swatch: '#f7f1df', cat: 'build' },
+    { id: 'bridge', name: 'Bridge', swatch: '#ad7742', cat: 'build' },
+    { id: 'ladder', name: 'Ladder', swatch: '#ad7742', cat: 'build' },
     { id: 'table', name: 'Table', swatch: '#ad7742', cat: 'furniture' },
     { id: 'chair', name: 'Chair', swatch: '#ad7742', cat: 'furniture' },
     { id: 'bed', name: 'Bed', swatch: '#3a6fd8', cat: 'furniture' },
@@ -785,18 +849,24 @@
     { id: 'flowers', name: 'Flowers', swatch: '#f27fa0', cat: 'furniture' },
     { id: 'bench', name: 'Bench', swatch: '#ad7742', cat: 'furniture' },
     { id: 'barrel', name: 'Barrel', swatch: '#ad7742', cat: 'furniture' },
+    { id: 'well', name: 'Well', swatch: '#9a9ca5', cat: 'furniture' },
     { id: 'knight', name: 'Knight', swatch: '#c9ced8', cat: 'characters' },
     { id: 'queen', name: 'Queen', swatch: '#7b3fb0', cat: 'characters' },
     { id: 'sheep', name: 'Sheep', swatch: '#f7f5ef', cat: 'characters' },
     { id: 'chicken', name: 'Chicken', swatch: '#fbfbf8', cat: 'characters' },
     { id: 'cat', name: 'Cat', swatch: '#e8913a', cat: 'characters' },
-    { id: 'dragon', name: 'Dragon', swatch: '#3fae8c', cat: 'characters' }
+    { id: 'dragon', name: 'Dragon', swatch: '#3fae8c', cat: 'characters' },
+    { id: 'horse', name: 'Horse', swatch: '#8a5a36', cat: 'characters' },
+    { id: 'dog', name: 'Dog', swatch: '#d9a066', cat: 'characters' },
+    { id: 'owl', name: 'Owl', swatch: '#8a6a4a', cat: 'characters' },
+    { id: 'ghost', name: 'Ghost', swatch: '#f4f7ff', cat: 'characters' }
   ];
   const PIECE = Object.fromEntries(PIECES.map((p) => [p.id, p]));
   // How pieces turn when placed: FACE4 pieces turn their front toward the player (4 ways),
   // FACE2 pieces line up across the view (2 ways). Everything else never turns.
-  const FACE4 = new Set(['stairs', 'bed', 'chair', 'bench', 'throne', 'bookshelf', 'chest', 'fireplace']);
-  const FACE2 = new Set(['gate', 'fence', 'door']);
+  const FACE4 = new Set(['stairs', 'bed', 'chair', 'bench', 'throne', 'bookshelf', 'chest', 'fireplace', 'ladder',
+    'banner_red', 'banner_blue', 'banner_yellow', 'banner_green']);
+  const FACE2 = new Set(['gate', 'fence', 'door', 'arch', 'bridge']);
   function pieceYaw(id, r) { return FACE4.has(id) ? (r || 0) * Math.PI / 2 : (FACE2.has(id) && r ? Math.PI / 2 : 0); }
   // Top surface height of low pieces (1 = a full block). Characters stand at this height, and
   // small things placed on top (RESTS: candles, flowers, rug) sit down onto it.
@@ -858,10 +928,14 @@
       case 'slab': o = mk(G.slab, M.stone); break;
       case 'stairs': o = mk(G.stairs, M.stone); break;
       case 'fence': o = mk(G.fence, M.wood); break;
-      case 'door':
+      case 'door': { // the panel hangs on a hinge at one side, so it can swing open
         o = new THREE.Group();
-        o.add(mk(G.door, M.wood), mk(G.knob, M.iron));
+        const hinge = new THREE.Group(), panel = mk(G.door, M.wood), knob = mk(G.knob, M.iron);
+        hinge.position.x = -0.43; panel.position.x = knob.position.x = 0.43;
+        hinge.add(panel, knob); o.add(hinge);
+        o.userData.hinge = hinge;
         break;
+      }
       case 'lamp': {
         o = new THREE.Group();
         const gl = new THREE.Sprite(M.glow); gl.scale.setScalar(2.6);
@@ -884,6 +958,26 @@
       case 'clock': o = mk(G.box, M.clockFaces); break;
       case 'chest': o = new THREE.Group(); o.add(mk(G.chestBody, M.wood), mk(G.chestLid, M.wood), mk(G.chestTrim, M.trim), mk(G.keyhole, M.soot, false)); break;
       case 'barrel': o = new THREE.Group(); o.add(mk(G.barrel, M.wood), mk(G.barrelTop, M.barrelFaces), mk(G.hoops, M.iron)); break;
+      case 'arch': o = mk(G.openArch, M.stone); break;
+      case 'bridge': o = new THREE.Group(); o.add(mk(G.bridgeDeck, M.wood), mk(G.bridgeRails, M.wood)); break;
+      case 'ladder': o = mk(G.ladder, M.wood); break;
+      case 'well': {
+        o = new THREE.Group();
+        const bucket = mk(G.bucket, M.iron); bucket.position.set(0, 0.0, 0);
+        o.add(mk(G.wellWall, M.cobble), mk(G.wellInner, M.wellInside, false), mk(G.wellRim, M.stone), mk(G.wellWater, M.water, false),
+          mk(G.wellFrame, M.wood), mk(G.wellRoof, M.roof), bucket);
+        break;
+      }
+      case 'banner_red': case 'banner_blue': case 'banner_yellow': case 'banner_green': {
+        o = new THREE.Group();
+        const cloth = mk(G.bannerCloth, M[id]); cloth.customDepthMaterial = M[id + 'Depth'];
+        o.add(mk(G.bannerPole, M.trim), cloth);
+        break;
+      }
+      case 'flowerbed':
+        o = new THREE.Group();
+        o.add(mk(G.bedBox, M.wood), mk(G.bedSoil, M.soil), mk(G.bedLeaves, M.leafB), mk(G.bedBloomA, M.petalA), mk(G.bedBloomB, M.petalB), mk(G.bedBloomC, M.petalC));
+        break;
       case 'rug': o = mk(G.rug, M.rugFaces, false); break;
       case 'flowers':
         o = new THREE.Group();
@@ -922,9 +1016,12 @@
     slab: { y: -0.22, d: 3.3 }, lantern: { y: -0.24, d: 2.0 }, fence: { y: 0, d: 3.5 },
     knight: { y: 0.44, d: 2.4 }, queen: { y: 0.46, d: 2.4 }, sheep: { y: 0.3, d: 2.1 },
     chicken: { y: 0.25, d: 1.5 }, cat: { y: 0.24, d: 1.6 }, dragon: { y: 0.62, d: 3.4 },
+    horse: { y: 0.55, d: 3.4 }, dog: { y: 0.22, d: 1.5 }, owl: { y: 0.27, d: 1.45 }, ghost: { y: 0.5, d: 2.1 },
     table: { y: -0.1, d: 3.3 }, chair: { y: -0.02, d: 3.0 }, bed: { y: -0.16, d: 3.0 }, throne: { y: 0.16, d: 4.0 },
     chest: { y: -0.18, d: 2.6 }, barrel: { y: -0.1, d: 2.9 }, candles: { y: -0.3, d: 1.5 }, flowers: { y: -0.27, d: 1.5 },
-    rug: { y: -0.45, d: 2.9 }, bench: { y: -0.2, d: 2.9 }
+    rug: { y: -0.45, d: 2.9 }, bench: { y: -0.2, d: 2.9 },
+    arch: { y: 0, d: 3.4 }, bridge: { y: -0.3, d: 3.2 }, ladder: { y: 0, d: 3.2 }, well: { y: 0.1, d: 3.3 }, flowerbed: { y: -0.3, d: 3.0 },
+    banner_red: { y: 0, d: 2.9 }, banner_blue: { y: 0, d: 2.9 }, banner_yellow: { y: 0, d: 2.9 }, banner_green: { y: 0, d: 2.9 }
   };
   function shovelIcon() { // the Dig tool: a shovel over a hole in the grass
     const S = 112, c = cv(S, S), g = c.getContext('2d');
@@ -1181,7 +1278,7 @@
   // instead of one per block. Pieces that flicker (SOLO) are separate objects. Glass and ice are
   // one merged mesh (see "see-through blocks"). A block being placed pops in as a separate object
   // (rec.temp) and joins its batch when the pop ends.
-  const SOLO = new Set(['torch', 'candles', 'fireplace']);
+  const SOLO = new Set(['torch', 'candles', 'fireplace', 'door']); // doors too: each swings open on its own
   const CLEAR = new Set(['glass', 'ice']);
   const flickers = new Set();
   const batches = new Map();
@@ -1269,6 +1366,7 @@
       blockGroup.add(o);
       rec.obj = o;
       if (o.userData.flicker) flickers.add(o);
+      if (o.userData.hinge && rec.swing) o.userData.hinge.rotation.y = DOOR_OPEN * ease(rec.swing);
     } else if (CLEAR.has(rec.t)) {
       clearRecs.add(rec); clearDirty = true;
     } else {
@@ -1333,6 +1431,35 @@
     if (opts.record) pushUndo({ op: 'remove', x, y, z, t: b.t, r: b.r });
     return true;
   }
+  /* doors: tap one to open or close it; characters open them as they walk through */
+  // Opening a door changes only the view: it isn't saved and isn't an undo step.
+  const DOOR_OPEN = 1.75; // radians, about 100 degrees, swinging away from the front
+  const ease = (k) => k * k * (3 - 2 * k);
+  const swinging = new Set(), autoDoors = new Set();
+  function setDoor(rec, open, byChar) {
+    if (!rec || rec.t !== 'door' || !!rec.open === open) return;
+    rec.open = open;
+    rec.byChar = open && !!byChar; // a character opened it: it closes again behind them (quietly)
+    if (rec.byChar) { autoDoors.add(rec); rec.shutT = 1.2; } else autoDoors.delete(rec);
+    if (rec.swing === undefined) rec.swing = open ? 0 : 1;
+    swinging.add(rec);
+    if (!byChar) blip(open ? 'creak' : 'shut'); // only taps make a sound
+  }
+  function stepDoors(dt) {
+    for (const rec of autoDoors) { // shut once no one is in the doorway for a moment
+      if (world.get(K(rec.x, rec.y, rec.z)) !== rec || !rec.open) { autoDoors.delete(rec); continue; }
+      const busy = chars.some((c) => c.cell.x === rec.x && c.cell.z === rec.z && c.cell.y === rec.y);
+      rec.shutT = busy ? 1.2 : rec.shutT - dt;
+      if (rec.shutT <= 0) setDoor(rec, false, true);
+    }
+    for (const rec of swinging) {
+      const goal = rec.open ? 1 : 0;
+      rec.swing = reduceMotion ? goal : rec.swing + Math.max(-dt / 0.35, Math.min(dt / 0.35, goal - rec.swing));
+      const o = rec.temp || rec.obj;
+      if (o && o.userData.hinge) o.userData.hinge.rotation.y = DOOR_OPEN * ease(rec.swing);
+      if (rec.swing === goal) swinging.delete(rec);
+    }
+  }
   function clearBlocks() {
     world.clear();
     for (const b of batches.values()) {
@@ -1341,6 +1468,7 @@
     }
     for (const o of blockGroup.children.slice()) if (!o.isInstancedMesh) blockGroup.remove(o);
     flickers.clear();
+    swinging.clear(); autoDoors.clear();
     clearRecs.clear(); clearDirty = true;
     for (const p of pops) p.obj.scale.setScalar(1);
     pops.length = 0;
@@ -1707,6 +1835,10 @@
     for (const [x, z] of [[-10, 10], [10, 10], [-12, 3], [12, 3], [-12, -5], [12, -5], [-12, -11], [12, -11]]) put(x, 0, z, 'tree');
     for (const [x, z] of [[-2, 5], [2, 5], [-6, 2], [6, 2], [-6, 12], [6, 12]]) put(x, 0, z, 'flowers');
     for (const [x, z] of [[-1, 1], [1, 1], [-2, 13], [2, 13]]) put(x, 0, z, 'torch');
+    put(-8, 0, 7, 'well');
+    for (const x of [-7, -6, -5, 5, 6, 7]) put(x, 0, 1, 'flowerbed'); // flower beds along the keep
+    put(-3, 2, 1, 'banner_red', 0); put(3, 2, 1, 'banner_red', 0); // banners on the keep and the gatehouse
+    put(-2, 4, 17, 'banner_blue', 0); put(2, 4, 17, 'banner_blue', 0);
     // trees outside the moat, and farther out
     for (const [x, z] of [[-22, -21], [21, -22], [-22, 8], [22, -4], [-7, 22], [8, 22], [22, 21], [-21, 21],
       [-30, -26], [29, -31], [-32, 22], [31, 26], [-6, -32], [-31, -8], [32, 5], [7, 31], [-40, 34], [41, -14], [14, -42], [-42, -36]]) put(x, 0, z, 'tree');
@@ -1927,7 +2059,8 @@
     return true;
   }
 
-  const CHAR_IDS = ['knight', 'queen', 'sheep', 'chicken', 'cat', 'dragon'];
+  const CHAR_IDS = ['knight', 'queen', 'sheep', 'chicken', 'cat', 'dragon', 'horse', 'dog', 'owl', 'ghost'];
+  const FLYERS = new Set(['dragon', 'owl', 'ghost']); // saved at their home square, not where they happen to be
   const CHAR_SET = new Set(CHAR_IDS);
   const MAX_CHARS = 40;
   const CM = {
@@ -1953,7 +2086,19 @@
     dragon: std({ color: '#3fae8c', roughness: 0.6, flatShading: true }),
     belly: std({ color: '#f4d58d', roughness: 0.7 }),
     wing: std({ color: '#2c7f8f', roughness: 0.6, side: THREE.DoubleSide, flatShading: true }),
-    horn: std({ color: '#f6e7b8', roughness: 0.6 })
+    horn: std({ color: '#f6e7b8', roughness: 0.6 }),
+    horse: std({ color: '#8a5a36', roughness: 0.75 }),
+    mane: std({ color: '#3b2616', roughness: 0.9 }),
+    muzzle: std({ color: '#c9a07a', roughness: 0.8 }),
+    dog: std({ color: '#d9a066', roughness: 0.85 }),
+    dogEar: std({ color: '#8a5a36', roughness: 0.85 }),
+    collar: std({ color: '#c8372d', roughness: 0.6 }),
+    owl: std({ color: '#8a6a4a', roughness: 0.9, flatShading: true }),
+    owlBelly: std({ color: '#e8d6b0', roughness: 0.9 }),
+    owlEye: new THREE.MeshBasicMaterial({ color: '#f2c230' }),
+    ghost: std({ color: '#f4f7ff', emissive: new THREE.Color('#cfe0ff'), emissiveIntensity: 0.55, transparent: true, opacity: 0.85, roughness: 0.6 }),
+    ghostFace: new THREE.MeshBasicMaterial({ color: '#2b2d40', transparent: true, opacity: 0.85 }),
+    ghostCheek: new THREE.MeshBasicMaterial({ color: '#f5a3b8', transparent: true, opacity: 0.85 })
   };
   const CG = {
     sph: new THREE.SphereGeometry(1, 14, 10), ico: new THREE.IcosahedronGeometry(1, 1),
@@ -1970,6 +2115,10 @@
   })();
   const HIT_CHAR = new THREE.BoxGeometry(0.6, 0.9, 0.6);
   const HIT_DRAGON = new THREE.BoxGeometry(1.1, 1.2, 1.7);
+  const HIT_SIZE = { // tap boxes: size and height
+    dragon: [HIT_DRAGON, 0.6], horse: [new THREE.BoxGeometry(0.5, 1.05, 1.0), 0.52], owl: [new THREE.BoxGeometry(0.4, 0.6, 0.4), 0.3],
+    ghost: [new THREE.BoxGeometry(0.6, 0.8, 0.6), 0.6], dog: [new THREE.BoxGeometry(0.4, 0.5, 0.6), 0.25]
+  };
   function part(parent, geo, mat, sc, pos, rot) {
     const m = new THREE.Mesh(geo, mat);
     m.scale.set(sc[0], sc[1], sc[2]);
@@ -2049,6 +2198,72 @@
       part(g, CG.sph, CM.eyeGreen, [0.017, 0.02, 0.01], [-0.04, 0.33, 0.275]);
       part(g, CG.cyl, CM.ginger, [0.022, 0.26, 0.022], [0, 0.32, -0.26], [-0.5, 0, 0]);
     },
+    horse(g) {
+      part(g, CG.sph, CM.horse, [0.21, 0.22, 0.44], [0, 0.6, 0]);
+      for (const [x, z] of [[0.11, 0.27], [-0.11, 0.27], [0.11, -0.27], [-0.11, -0.27]]) {
+        part(g, CG.cyl, CM.horse, [0.055, 0.5, 0.055], [x, 0.27, z]);
+        part(g, CG.cyl, CM.mane, [0.062, 0.06, 0.062], [x, 0.03, z]);
+      }
+      part(g, CG.cyl, CM.horse, [0.11, 0.34, 0.14], [0, 0.8, 0.38], [0.95, 0, 0]); // neck, leaning forward
+      part(g, CG.sph, CM.horse, [0.11, 0.12, 0.26], [0, 0.9, 0.58], [0.85, 0, 0]); // long head, nose down
+      part(g, CG.sph, CM.muzzle, [0.09, 0.085, 0.09], [0, 0.78, 0.72]);
+      part(g, CG.box, CM.mane, [0.04, 0.3, 0.1], [0, 0.9, 0.32], [0.95, 0, 0]);
+      part(g, CG.box, CM.mane, [0.04, 0.08, 0.1], [0, 1.0, 0.5], [0.3, 0, 0]); // forelock
+      part(g, CG.cyl, CM.mane, [0.045, 0.4, 0.045], [0, 0.48, -0.48], [-0.35, 0, 0]); // tail
+      for (const sx of [1, -1]) {
+        part(g, CG.cone, CM.horse, [0.03, 0.09, 0.025], [sx * 0.06, 1.06, 0.47], [-0.3, 0, sx * -0.2]);
+        part(g, CG.sph, CM.dark, [0.02, 0.025, 0.018], [sx * 0.095, 0.93, 0.6]);
+        part(g, CG.sph, CM.dark, [0.012, 0.01, 0.01], [sx * 0.035, 0.74, 0.8]); // nostrils
+      }
+    },
+    dog(g) {
+      part(g, CG.sph, CM.dog, [0.1, 0.095, 0.18], [0, 0.22, 0]);
+      part(g, CG.sph, CM.white, [0.06, 0.05, 0.07], [0.05, 0.27, -0.04]);
+      for (const [x, z] of [[0.06, 0.1], [-0.06, 0.1], [0.06, -0.11], [-0.06, -0.11]]) part(g, CG.cyl, CM.dog, [0.03, 0.16, 0.03], [x, 0.08, z]);
+      part(g, CG.sph, CM.dog, [0.09, 0.085, 0.09], [0, 0.34, 0.17]);
+      part(g, CG.sph, CM.cream, [0.05, 0.04, 0.06], [0, 0.31, 0.26]);
+      part(g, CG.sph, CM.dark, [0.018, 0.015, 0.012], [0, 0.33, 0.315]);
+      part(g, CG.cyl, CM.collar, [0.075, 0.025, 0.075], [0, 0.27, 0.13], [0.5, 0, 0]);
+      part(g, CG.cyl, CM.dog, [0.02, 0.15, 0.02], [0, 0.3, -0.2], [-0.75, 0, 0]);
+      for (const sx of [1, -1]) {
+        part(g, CG.sph, CM.dogEar, [0.025, 0.065, 0.045], [sx * 0.085, 0.32, 0.15], [0, 0, sx * 0.25]);
+        part(g, CG.sph, CM.dark, [0.016, 0.018, 0.01], [sx * 0.035, 0.37, 0.245]);
+      }
+    },
+    owl(g) {
+      part(g, CG.ico, CM.owl, [0.13, 0.17, 0.12], [0, 0.2, 0]);
+      part(g, CG.sph, CM.owlBelly, [0.095, 0.12, 0.05], [0, 0.18, 0.075]);
+      part(g, CG.ico, CM.owl, [0.11, 0.1, 0.1], [0, 0.4, 0]);
+      part(g, CG.cone, CM.orange, [0.018, 0.04, 0.018], [0, 0.37, 0.105], [Math.PI / 2, 0, 0]);
+      g.userData.wings = [];
+      for (const sx of [1, -1]) {
+        part(g, CG.sph, CM.owlBelly, [0.045, 0.045, 0.02], [sx * 0.045, 0.415, 0.085]);
+        part(g, CG.sph, CM.owlEye, [0.026, 0.026, 0.012], [sx * 0.045, 0.415, 0.1]);
+        part(g, CG.sph, CM.dark, [0.012, 0.012, 0.008], [sx * 0.045, 0.415, 0.11]);
+        part(g, CG.cone, CM.owl, [0.022, 0.06, 0.02], [sx * 0.07, 0.5, 0.0], [0, 0, -sx * 0.35]);
+        part(g, CG.cyl, CM.orange, [0.012, 0.04, 0.012], [sx * 0.04, 0.02, 0.02]);
+        const pivot = new THREE.Group();
+        pivot.position.set(sx * 0.11, 0.3, 0);
+        pivot.scale.set(sx * 0.45, 0.45, 0.45);
+        pivot.userData.sx = sx;
+        const w = new THREE.Mesh(CG.wing, CM.owl);
+        w.castShadow = true;
+        pivot.add(w);
+        g.add(pivot);
+        g.userData.wings.push(pivot);
+      }
+    },
+    ghost(g) {
+      part(g, CG.sph, CM.ghost, [0.2, 0.22, 0.2], [0, 0.66, 0]);
+      part(g, CG.cyl, CM.ghost, [0.205, 0.32, 0.205], [0, 0.48, 0]);
+      for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2; part(g, CG.sph, CM.ghost, [0.07, 0.07, 0.07], [Math.sin(a) * 0.16, 0.32, Math.cos(a) * 0.16]); }
+      for (const sx of [1, -1]) {
+        part(g, CG.sph, CM.ghost, [0.05, 0.09, 0.05], [sx * 0.23, 0.55, 0.04], [0, 0, sx * 0.5]);
+        part(g, CG.sph, CM.ghostFace, [0.032, 0.048, 0.02], [sx * 0.07, 0.7, 0.18]);
+        part(g, CG.sph, CM.ghostCheek, [0.028, 0.02, 0.01], [sx * 0.12, 0.63, 0.165]);
+      }
+      part(g, CG.sph, CM.ghostFace, [0.035, 0.022, 0.012], [0, 0.62, 0.195]);
+    },
     dragon(g) {
       part(g, CG.sph, CM.dragon, [0.3, 0.26, 0.45], [0, 0.55, 0]);
       part(g, CG.sph, CM.belly, [0.22, 0.2, 0.36], [0, 0.5, 0.07]);
@@ -2103,38 +2318,46 @@
     sheep: { dur: 0.95, idle: [1.2, 5], hop: 0.025 },
     chicken: { dur: 0.32, idle: [0.25, 1.6], hop: 0.07 },
     cat: { dur: 0.45, idle: [0.6, 4], hop: 0.025 },
-    dragon: { fly: true }
+    dragon: { fly: true },
+    horse: { dur: 0.8, idle: [1, 4.5], hop: 0.02 },
+    dog: { dur: 0.32, idle: [0.2, 1.4], hop: 0.06 },
+    owl: { perch: true },
+    ghost: { float: true }
   };
   const chars = [];
   const charHits = [];
   let charSeq = 0;
   const NOSTAND = new Set(['water', 'lava', 'roof', 'flag', 'torch', 'tree', 'fence', 'lantern', 'door',
-    'table', 'chair', 'bench', 'throne', 'candles', 'flowers', 'rug']);
-  const PASS = new Set(['gate', 'door', 'rug']);
+    'table', 'chair', 'bench', 'throne', 'candles', 'flowers', 'rug', 'arch', 'bridge', 'ladder', 'well', 'flowerbed',
+    'banner_red', 'banner_blue', 'banner_yellow', 'banner_green']);
+  const PASS = new Set(['gate', 'door', 'rug', 'arch', 'bridge', 'ladder']);
+  const HOLDS = new Set(['bridge', 'ladder']); // pieces that hold up a character standing in their own square (a bridge deck, a ladder to climb)
   const passable = (x, y, z) => { if (isEarth(x, y, z)) return false; const b = world.get(K(x, y, z)); return !b || PASS.has(b.t); };
-  const supported = (x, y, z) => { if (isEarth(x, y - 1, z)) return true; const b = world.get(K(x, y - 1, z)); return !!b && !NOSTAND.has(b.t); };
+  const supported = (x, y, z) => {
+    const here = world.get(K(x, y, z));
+    if (here && HOLDS.has(here.t)) return true;
+    if (isEarth(x, y - 1, z)) return true;
+    const b = world.get(K(x, y - 1, z));
+    return !!b && !NOSTAND.has(b.t);
+  };
   const canStand = (x, y, z) => inBounds(x, y, z) && passable(x, y, z) && supported(x, y, z);
   function footY(x, y, z) {
     const below = world.get(K(x, y - 1, z)), here = world.get(K(x, y, z));
-    return (below && TOP[below.t] ? y - 1 + TOP[below.t] : y) + (here && here.t === 'rug' ? 0.025 : 0);
+    return (below && TOP[below.t] ? y - 1 + TOP[below.t] : y) + (here && here.t === 'rug' ? 0.025 : here && here.t === 'bridge' ? 0.12 : 0);
   }
   function findStand(x, y, z) { // the nearest height a character can stand at in this column, or null
     for (let yy = Math.min(y, MAXY - 1); yy >= -DEPTH; yy--) if (canStand(x, yy, z)) return yy;
     for (let yy = y + 1; yy < MAXY; yy++) if (canStand(x, yy, z)) return yy;
     return null;
   }
-  function placeDragon(c, t) {
-    const R = 7, alt = c.home.y + 7;
-    c.obj.position.set(c.home.x + 0.5 + Math.cos(c.ang) * R, alt + Math.sin(t * 1.3 + c.id) * 0.4, c.home.z + 0.5 + Math.sin(c.ang) * R);
-    c.obj.rotation.y = Math.atan2(-Math.sin(c.ang), Math.cos(c.ang));
-  }
   function addChar(kind, x, y, z, opts) {
     opts = opts || {};
     if (!CHAR_SET.has(kind) || chars.length >= MAX_CHARS || !inBounds(x, y, z)) return null;
     const obj = makeCharacter(kind);
-    const hit = new THREE.Mesh(kind === 'dragon' ? HIT_DRAGON : HIT_CHAR, M.hit);
+    const hs = HIT_SIZE[kind] || [HIT_CHAR, 0.4];
+    const hit = new THREE.Mesh(hs[0], M.hit);
     hit.visible = false;
-    hit.position.y = kind === 'dragon' ? 0.6 : 0.4;
+    hit.position.y = hs[1];
     obj.add(hit);
     const c = {
       id: ++charSeq, kind, obj, hit, cell: { x, y, z }, home: { x, y, z }, spec: CHAR_SPEC[kind],
@@ -2143,17 +2366,18 @@
     };
     hit.userData.char = c;
     if (kind === 'dragon') placeDragon(c, 0);
-    else { obj.position.set(x + 0.5, footY(x, y, z), z + 0.5); obj.rotation.y = Math.random() * Math.PI * 2; }
+    else { obj.position.set(x + 0.5, kind === 'ghost' ? y + 0.3 : footY(x, y, z), z + 0.5); obj.rotation.y = c.baseYaw = Math.random() * Math.PI * 2; }
     scene.add(obj);
     chars.push(c); charHits.push(hit);
     if (opts.pop) startPop(obj, 0);
     if (opts.record) pushUndo({ op: 'addChar', id: c.id, kind, x, y, z });
     return c;
   }
-  const charSpot = (c) => (c.kind === 'dragon' ? c.home : c.cell);
+  const charSpot = (c) => (FLYERS.has(c.kind) ? c.home : c.cell);
   function removeChar(c, opts) {
     const i = chars.indexOf(c);
     if (i < 0) return false;
+    if (c.mode || c.claim) standUp(c);
     chars.splice(i, 1);
     charHits.splice(charHits.indexOf(c.hit), 1);
     scene.remove(c.obj);
@@ -2164,9 +2388,9 @@
     const inside = (p) => inBounds(p.x, 0, p.z);
     const pull = (p) => { p.x = Math.max(-half, Math.min(half - 1, p.x)); p.z = Math.max(-half, Math.min(half - 1, p.z)); };
     for (const c of chars) {
-      if (inside(c.home) && (c.kind === 'dragon' || inside(c.cell))) continue;
+      if (inside(c.home) && (FLYERS.has(c.kind) || inside(c.cell))) continue;
       pull(c.home);
-      if (c.kind !== 'dragon') { c.cell = { x: c.home.x, y: findStand(c.home.x, c.home.y, c.home.z) ?? 0, z: c.home.z }; c.moving = false; }
+      if (!FLYERS.has(c.kind)) { c.cell = { x: c.home.x, y: findStand(c.home.x, c.home.y, c.home.z) ?? 0, z: c.home.z }; c.moving = false; }
     }
   }
   function serializeChars() { return chars.map((c) => { const s = charSpot(c); return [c.kind, s.x, s.y, s.z]; }); }
@@ -2180,67 +2404,288 @@
   }
   function sampleChars() {
     return [['knight', 0, 0, 12], ['knight', 0, 0, 23], ['queen', 0, 0, -10], ['sheep', -22, 0, 3], ['sheep', -21, 0, 11], ['sheep', 23, 0, -9],
-      ['chicken', -5, 0, 9], ['chicken', 5, 0, 10], ['cat', -6, 5, -9], ['dragon', 0, 14, -6]];
+      ['chicken', -5, 0, 9], ['chicken', 5, 0, 10], ['cat', -6, 5, -9], ['dragon', 0, 14, -6],
+      ['horse', 3, 0, 24], ['dog', 4, 0, 4], ['owl', 14, 10, 15], ['ghost', -6, 0, 6]];
   }
   function starterChars() { // the sample cast, set down on whatever is built there
     const out = [];
     for (const [k, x, sy, z] of sampleChars()) {
-      if (k === 'dragon') { out.push([k, x, sy, z]); continue; }
+      if (k === 'dragon' || k === 'ghost') { out.push([k, x, sy, z]); continue; }
       const y = findStand(x, sy, z); // the nearest place to stand, starting where the sample castle puts them
       if (y !== null) out.push([k, x, y, z]);
     }
     return out;
   }
   const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-  function chooseStep(c) {
-    const { x, y, z } = c.cell;
-    const dirs = DIRS.slice().sort(() => Math.random() - 0.5);
-    if (Math.hypot(x - c.home.x, z - c.home.z) > 9 && Math.random() < 0.7)
-      dirs.sort((a, b) => Math.hypot(x + a[0] - c.home.x, z + a[1] - c.home.z) - Math.hypot(x + b[0] - c.home.x, z + b[1] - c.home.z));
-    for (const [dx, dz] of dirs) {
+
+  /* ---------- smarter characters ---------- */
+  // Characters wander, and also: keep to paths when they're on one; now and then sit on a bench,
+  // chair or throne; at night go to bed, or gather around torches and fireplaces; climb ladders and
+  // stairs. The dragon sometimes lands on a high spot near home. Trips to a bed, seat or fire use a
+  // short path search (findPath) over the squares a character can walk to (moves).
+  const SITTERS = new Set(['knight', 'queen', 'cat', 'dog']);
+  const SLEEPERS = new Set(['knight', 'queen', 'cat', 'dog']);
+  const SEATS = new Set(['chair', 'bench', 'throne']), BEDS = new Set(['bed']);
+  const SEAT_LIFT = { chair: 0.18, bench: 0.18, throne: 0.24 };
+  const WARM = new Set(['torch', 'fireplace', 'lantern', 'lamp', 'candles']);
+  const PATHY = new Set(['cobble', 'wood', 'bridge', 'slab', 'stairs', 'rug']);
+  const taken = new Set(); // beds and seats in use
+  const isNight = () => nightT > 0.6;
+  const vA = new THREE.Vector3(), vB = new THREE.Vector3();
+  const zzzTex = (() => {
+    const c = cv(64, 64), g = c.getContext('2d');
+    g.lineWidth = 5; g.strokeStyle = 'rgba(30,40,80,0.55)'; g.fillStyle = '#ffffff';
+    g.font = 'bold 34px Fredoka, sans-serif'; g.strokeText('z', 8, 52); g.fillText('z', 8, 52);
+    g.font = 'bold 24px Fredoka, sans-serif'; g.strokeText('z', 36, 28); g.fillText('z', 36, 28);
+    return new THREE.CanvasTexture(c);
+  })();
+  const zzzMat = new THREE.SpriteMaterial({ map: zzzTex, transparent: true, depthWrite: false });
+  const onPath = (x, y, z) => { const h = world.get(K(x, y, z)); if (h && PATHY.has(h.t)) return true; const b = world.get(K(x, y - 1, z)); return !!b && PATHY.has(b.t); };
+  const isLadder = (x, y, z) => { const b = world.get(K(x, y, z)); return !!b && b.t === 'ladder'; };
+  function moves(x, y, z) { // the squares a character can step to from here: one up, or up to two down, or along a ladder
+    const out = [];
+    for (const [dx, dz] of DIRS) {
       const nx = x + dx, nz = z + dz;
       for (const ny of [y, y + 1, y - 1, y - 2]) {
-        if (ny < 0) continue;
         if (ny === y + 1 && !passable(x, y + 1, z)) continue;
-        if (canStand(nx, ny, nz)) {
-          c.from.set(x + 0.5, footY(x, y, z), z + 0.5);
-          c.to.set(nx + 0.5, footY(nx, ny, nz), nz + 0.5);
-          c.cell = { x: nx, y: ny, z: nz };
-          c.moving = true; c.t = 0;
-          c.targetYaw = Math.atan2(dx, dz);
-          return true;
+        if (canStand(nx, ny, nz)) { out.push({ x: nx, y: ny, z: nz }); break; }
+      }
+    }
+    if (isLadder(x, y, z)) for (const ny of [y + 1, y - 1]) if (canStand(x, ny, z) && (isLadder(x, ny, z) || ny < y)) out.push({ x, y: ny, z });
+    return out;
+  }
+  function stepTo(c, n) {
+    const { x, y, z } = c.cell;
+    c.from.set(x + 0.5, footY(x, y, z), z + 0.5);
+    c.to.set(n.x + 0.5, footY(n.x, n.y, n.z), n.z + 0.5);
+    c.climb = n.x === x && n.z === z; // straight up or down a ladder: no hop, face the ladder
+    if (c.climb) { const l = world.get(K(x, Math.max(y, n.y), z)); if (l && l.t === 'ladder') c.targetYaw = pieceYaw('ladder', l.r) + Math.PI; }
+    else { c.targetYaw = Math.atan2(n.x - x, n.z - z); c.lastDir = [n.x - x, n.z - z]; }
+    c.cell = { x: n.x, y: n.y, z: n.z };
+    c.moving = true; c.t = 0;
+    const d = world.get(K(n.x, n.y, n.z));
+    if (d && d.t === 'door' && !d.open) setDoor(d, true, true); // open the door on the way through
+  }
+  function findPath(c, isGoal, maxR) { // the shortest walk to a square where isGoal(x, y, z) is true, or null
+    const s = c.cell, start = K(s.x, s.y, s.z), prev = new Map([[start, null]]), q = [s];
+    if (isGoal(s.x, s.y, s.z)) return [];
+    for (let i = 0; i < q.length && prev.size < 2500; i++) {
+      const p = q[i], pk = K(p.x, p.y, p.z);
+      for (const n of moves(p.x, p.y, p.z)) {
+        const k = K(n.x, n.y, n.z);
+        if (prev.has(k) || Math.abs(n.x - s.x) > maxR || Math.abs(n.z - s.z) > maxR) continue;
+        prev.set(k, pk);
+        if (isGoal(n.x, n.y, n.z)) {
+          const path = [n];
+          for (let b = pk; b !== start; b = prev.get(b)) { const [bx, by, bz] = b.split(',').map(Number); path.unshift({ x: bx, y: by, z: bz }); }
+          return path;
         }
+        q.push(n);
+      }
+    }
+    return null;
+  }
+  function nearby(c, types, r) { // free blocks of these kinds near a character, nearest first
+    const out = [], { x, y, z } = c.cell;
+    for (const b of world.values()) {
+      if (!types.has(b.t) || Math.abs(b.x - x) > r || Math.abs(b.z - z) > r || Math.abs(b.y - y) > 8 || taken.has(K(b.x, b.y, b.z))) continue;
+      out.push(b);
+    }
+    return out.sort((a, b) => Math.hypot(a.x - x, a.y - y, a.z - z) - Math.hypot(b.x - x, b.y - y, b.z - z)).slice(0, 4);
+  }
+  const besideIt = (b) => (x, y, z) => y === b.y && Math.abs(x - b.x) + Math.abs(z - b.z) === 1;
+  const nearIt = (b) => (x, y, z) => Math.abs(y - b.y) <= 1 && Math.max(Math.abs(x - b.x), Math.abs(z - b.z)) <= 2;
+  function planTrip(c, kind, targets, goalFor) {
+    for (const b of targets) {
+      const path = findPath(c, goalFor(b), 14);
+      if (path) {
+        c.path = path; c.plan = { kind, b };
+        if (kind !== 'warm') { c.claim = K(b.x, b.y, b.z); taken.add(c.claim); } // kept for this character, so no one else heads there
+        if (!path.length) arrive(c);
+        return true;
       }
     }
     return false;
   }
+  function arrive(c) { // reached the end of a trip
+    const p = c.plan;
+    c.plan = null; c.path = null;
+    if (!p) return;
+    if (world.get(K(p.b.x, p.b.y, p.b.z)) !== p.b) { tripFailed(c, p); return; } // it's gone
+    if (p.kind === 'warm') { c.camp = { x: p.b.x, y: p.b.y, z: p.b.z }; return; }
+    c.mode = p.kind; c.at = p.b;
+    c.modeT = 6 + Math.random() * 10; // how long to sit
+  }
+  function release(c) { if (c.claim) taken.delete(c.claim); c.claim = null; }
+  function tripFailed(c, p) { // the way got blocked or the bed went: let go of it, and at night think again
+    release(c);
+    c.plan = null; c.path = null;
+    if (p && p.kind !== 'sit') c.nightPlan = false;
+  }
+  function standUp(c) {
+    release(c);
+    c.mode = null; c.at = null;
+    c.obj.rotation.order = 'XYZ'; c.obj.rotation.x = 0; c.obj.rotation.z = 0;
+    if (c.zzz) { scene.remove(c.zzz); c.zzz = null; }
+    c.wait = 0.5 + Math.random();
+  }
+  function think(c) { // what a standing character does next
+    if (c.path) {
+      const n = c.path.shift();
+      if (n && moves(c.cell.x, c.cell.y, c.cell.z).some((m) => m.x === n.x && m.y === n.y && m.z === n.z)) { stepTo(c, n); return; }
+      tripFailed(c, c.plan); // the way is blocked now
+    }
+    const night = isNight();
+    if (!night) { c.camp = null; c.nightPlan = false; }
+    else if (!c.nightPlan) {
+      c.nightPlan = true;
+      if (SLEEPERS.has(c.kind) && planTrip(c, 'sleep', nearby(c, BEDS, 14), besideIt)) return;
+      if (planTrip(c, 'warm', nearby(c, WARM, 12), nearIt)) return;
+    }
+    if (!night && SITTERS.has(c.kind) && Math.random() < 0.1) {
+      const seats = nearby(c, SEATS, 8);
+      if (c.kind === 'queen') seats.sort((a, b) => (b.t === 'throne') - (a.t === 'throne'));
+      if (planTrip(c, 'sit', seats, besideIt)) return;
+    }
+    wander(c);
+  }
+  function wander(c) {
+    const { x, y, z } = c.cell;
+    let opts = moves(x, y, z);
+    if (!opts.length) { c.wait = 1 + Math.random() * 2; return; }
+    // ladders: once a character starts up (or down), it keeps going, then steps off at the end
+    const up = opts.find((o) => o.x === x && o.z === z && o.y === y + 1), down = opts.find((o) => o.x === x && o.z === z && o.y === y - 1);
+    if (c.climbing === 1 && up) { stepTo(c, up); return; }
+    if (c.climbing === -1 && down) { stepTo(c, down); return; }
+    if (c.climbing === 1) { c.climbing = 0; const off = opts.filter((o) => o.y === y + 1); if (off.length) { stepTo(c, off[0]); return; } }
+    c.climbing = 0;
+    const pull = c.camp ? { p: c.camp, r: 2 } : { p: c.home, r: 9 }; // stay near home (or the fire, at night)
+    const dist = (o) => Math.hypot(o.x - pull.p.x, o.z - pull.p.z);
+    if (dist(c.cell) > pull.r && Math.random() < 0.75) { stepTo(c, opts.sort((a, b) => dist(a) - dist(b))[0]); return; }
+    if ((up || down) && Math.random() < 0.6) { c.climbing = up && (!down || Math.random() < 0.5) ? 1 : -1; stepTo(c, c.climbing === 1 ? up : down); return; }
+    if (onPath(x, y, z) && Math.random() < 0.85) { // keep to the path, and keep going the same way
+      const along = opts.filter((o) => onPath(o.x, o.y, o.z) && !(c.lastDir && o.x - x === -c.lastDir[0] && o.z - z === -c.lastDir[1]));
+      if (along.length) opts = along;
+    } else if (Math.random() < 0.3) { const p = opts.filter((o) => onPath(o.x, o.y, o.z)); if (p.length) opts = p; }
+    stepTo(c, opts[Math.floor(Math.random() * opts.length)]);
+  }
+  function sitOrSleep(c, dt, t) { // hold a sitting or sleeping character in place; false once they get up
+    const b = c.at;
+    const gone = !b || world.get(K(b.x, b.y, b.z)) !== b;
+    if (gone || c.jump > 0 || (c.mode === 'sleep' && nightT < 0.3) || (c.mode === 'sit' && (c.modeT -= dt) <= 0)) { standUp(c); return false; }
+    const yaw = pieceYaw(b.t, b.r);
+    if (c.mode === 'sit') {
+      c.obj.position.set(b.x + 0.5, b.y + (SEAT_LIFT[b.t] || 0.2), b.z + 0.5);
+      c.obj.rotation.set(0, yaw, 0);
+      return true;
+    }
+    c.obj.rotation.order = 'YXZ'; // lying on the bed, head on the pillow
+    c.obj.rotation.set(-Math.PI / 2, yaw, 0);
+    c.obj.position.set(b.x + 0.5 + Math.sin(yaw) * 0.4, b.y + 0.41 + 0.14 + Math.sin(t * 1.6 + c.id) * 0.008, b.z + 0.5 + Math.cos(yaw) * 0.4);
+    if (!c.zzz) { c.zzz = new THREE.Sprite(zzzMat); c.zzz.scale.setScalar(0.4); scene.add(c.zzz); }
+    const k = (t * 0.35 + c.id * 0.37) % 1;
+    c.zzz.position.set(b.x + 0.5, b.y + 1.0 + k * 0.7, b.z + 0.5);
+    c.zzz.material.opacity = Math.sin(k * Math.PI);
+    c.zzz.visible = c.obj.visible;
+    return true;
+  }
+  function perchFor(c) { // the highest open spot near the dragon's home where it could land
+    let best = null;
+    for (const b of world.values()) {
+      if (b.y < 3 || Math.abs(b.x - c.home.x) > 10 || Math.abs(b.z - c.home.z) > 10 || NOSTAND.has(b.t)) continue;
+      if (!canStand(b.x, b.y + 1, b.z) || !passable(b.x, b.y + 2, b.z)) continue;
+      if (!best || b.y > best.y || (b.y === best.y && Math.random() < 0.3)) best = b;
+    }
+    return best && { x: best.x, y: best.y + 1, z: best.z };
+  }
+  function placeDragon(c, t) {
+    const R = 7, alt = c.home.y + 7;
+    c.obj.position.set(c.home.x + 0.5 + Math.cos(c.ang) * R, alt + Math.sin(t * 1.3 + c.id) * 0.4, c.home.z + 0.5 + Math.sin(c.ang) * R);
+    c.obj.rotation.y = Math.atan2(-Math.sin(c.ang), Math.cos(c.ang));
+  }
+  function updateDragon(c, dt, t) { // circles; now and then lands on a high spot, rests, and takes off again
+    const d = c.fly || (c.fly = { mode: 'circle', next: t + 12 + Math.random() * 20, k: 0, from: new THREE.Vector3(), to: new THREE.Vector3() });
+    if (d.mode === 'circle') {
+      c.ang += dt * 0.42;
+      placeDragon(c, t);
+      if (t > d.next) {
+        const p = perchFor(c);
+        if (p) { d.perch = p; d.mode = 'land'; d.k = 0; d.from.copy(c.obj.position); d.to.set(p.x + 0.5, footY(p.x, p.y, p.z), p.z + 0.5); }
+        else d.next = t + 20;
+      }
+    } else if (d.mode === 'land' || d.mode === 'lift') {
+      d.k = Math.min(1, d.k + dt / 3);
+      const e = d.k * d.k * (3 - 2 * d.k), dx = d.to.x - d.from.x, dz = d.to.z - d.from.z;
+      c.obj.position.lerpVectors(d.from, d.to, e);
+      c.obj.position.y += Math.sin(d.k * Math.PI) * 2;
+      if (dx || dz) c.obj.rotation.y = Math.atan2(dx, dz);
+      if (d.k >= 1) {
+        if (d.mode === 'land') { d.mode = 'perched'; d.until = t + 8 + Math.random() * 8; }
+        else { d.mode = 'circle'; d.next = t + 25 + Math.random() * 25; }
+      }
+    } else { // resting on its perch
+      c.obj.position.set(d.to.x, d.to.y + Math.sin(t * 2) * 0.02, d.to.z);
+      const p = d.perch;
+      if (t > d.until || !canStand(p.x, p.y, p.z)) {
+        d.mode = 'lift'; d.k = 0; d.from.copy(c.obj.position);
+        d.to.set(c.home.x + 0.5 + Math.cos(c.ang) * 7, c.home.y + 7, c.home.z + 0.5 + Math.sin(c.ang) * 7);
+      }
+    }
+    const flap = d.mode !== 'perched';
+    for (const w of c.obj.userData.wings) w.rotation.z = w.userData.sx * (flap ? Math.sin(t * 6 + c.id) * 0.55 + 0.15 : -0.35 + Math.sin(t * 0.8) * 0.05);
+    if (c.jump > 0) { c.jump = Math.max(0, c.jump - dt); c.obj.rotation.z = Math.sin((1 - c.jump / 0.6) * Math.PI * 2) * 0.5; } else c.obj.rotation.z = 0;
+  }
+  function updateOwl(c, dt, t) { // sits on its perch by day, flies circles at night
+    const f = c.fly || (c.fly = { k: 0, ang: Math.random() * Math.PI * 2 });
+    const { x, z } = c.home;
+    if (!canStand(x, c.home.y, z)) { const ny = findStand(x, c.home.y, z); if (ny !== null) { c.home = { x, y: ny, z }; c.cell = c.home; } }
+    f.k = Math.max(0, Math.min(1, f.k + (isNight() ? dt : -dt) / 1.5));
+    f.ang += dt * 0.9 * (0.2 + f.k);
+    const e = f.k * f.k * (3 - 2 * f.k), R = 3.5;
+    vA.set(x + 0.5, footY(x, c.home.y, z), z + 0.5);
+    vB.set(x + 0.5 + Math.cos(f.ang) * R, c.home.y + 3.5 + Math.sin(t * 2 + c.id) * 0.2, z + 0.5 + Math.sin(f.ang) * R);
+    c.obj.position.lerpVectors(vA, vB, e);
+    c.obj.rotation.y = f.k > 0.05 ? Math.atan2(-Math.sin(f.ang), Math.cos(f.ang)) : c.baseYaw + Math.sin(t * 0.5 + c.id) * 0.7; // looks around
+    const sw = 0.28 + 0.17 * e; // wings tucked in small while perched
+    for (const w of c.obj.userData.wings) { w.rotation.z = w.userData.sx * (f.k > 0.05 ? Math.sin(t * 11 + c.id) * 0.6 + 0.2 : -1.25); w.scale.set(w.userData.sx * sw, sw, sw); }
+    if (c.jump > 0) { c.jump = Math.max(0, c.jump - dt); c.obj.position.y += Math.sin((1 - c.jump / 0.45) * Math.PI) * 0.4; }
+  }
+  function driftGhost(c, dt, t, glow) { // drifts around home (through walls, it's a ghost), only at night
+    const { x, y, z } = c.home, a = t * 0.23 + c.id, b = t * 0.31 + c.id * 2;
+    c.obj.position.set(x + 0.5 + Math.sin(a) * 3, y + 0.25 + Math.sin(t * 1.6 + c.id) * 0.12, z + 0.5 + Math.sin(b) * 2.4);
+    c.obj.rotation.y = Math.atan2(Math.cos(a) * 0.69, Math.cos(b) * 0.74);
+    c.obj.visible = c.obj.visible && glow > 0.02;
+    if (c.jump > 0) { c.jump = Math.max(0, c.jump - dt); const k = 1 - c.jump / 0.45; c.obj.rotation.y += k * Math.PI * 2; c.obj.position.y += Math.sin(k * Math.PI) * 0.4; }
+  }
   function poke(c) { c.jump = c.kind === 'dragon' ? 0.6 : 0.45; voice(c.kind); }
   function updateChars(dt, t) {
+    const glow = Math.max(0, Math.min(1, (nightT - 0.35) / 0.4)); // the ghost fades in after dark
+    CM.ghost.opacity = 0.85 * glow; CM.ghostFace.opacity = CM.ghostCheek.opacity = 0.9 * glow;
     for (const c of chars) {
       c.obj.visible = !peek || c.obj.position.y < peek - 0.05; // hidden while peeking below them
-      if (c.kind === 'dragon') {
-        c.ang += dt * 0.42;
-        placeDragon(c, t);
-        for (const w of c.obj.userData.wings) w.rotation.z = w.userData.sx * (Math.sin(t * 6 + c.id) * 0.55 + 0.15);
-        if (c.jump > 0) { c.jump = Math.max(0, c.jump - dt); c.obj.rotation.z = Math.sin((1 - c.jump / 0.6) * Math.PI * 2) * 0.5; }
-        else c.obj.rotation.z = 0;
-        continue;
-      }
+      if (c.kind === 'dragon') { updateDragon(c, dt, t); continue; }
+      if (c.kind === 'owl') { updateOwl(c, dt, t); continue; }
+      if (c.kind === 'ghost') { driftGhost(c, dt, t, glow); continue; }
+      if (c.mode && sitOrSleep(c, dt, t)) continue;
       const sp = c.spec;
       let bob = 0;
       if (c.moving) {
         c.t += dt / sp.dur;
         const k = Math.min(1, c.t);
         c.obj.position.lerpVectors(c.from, c.to, k);
-        if (c.to.y !== c.from.y) c.obj.position.y += Math.sin(k * Math.PI) * 0.3;
-        if (!reduceMotion) bob = Math.abs(Math.sin(k * Math.PI * 2)) * sp.hop;
-        if (k >= 1) { c.moving = false; c.wait = sp.idle[0] + Math.random() * (sp.idle[1] - sp.idle[0]); }
+        if (c.to.y !== c.from.y && !c.climb) c.obj.position.y += Math.sin(k * Math.PI) * 0.3;
+        if (!reduceMotion && !c.climb) bob = Math.abs(Math.sin(k * Math.PI * 2)) * sp.hop;
+        if (k >= 1) {
+          c.moving = false;
+          c.wait = c.path && c.path.length ? 0.05 : sp.idle[0] + Math.random() * (sp.idle[1] - sp.idle[0]);
+          if (c.plan && c.path && !c.path.length) arrive(c);
+        }
       } else {
         const { x, y, z } = c.cell;
         if (!canStand(x, y, z)) { const ny = findStand(x, y, z); if (ny !== null) c.cell = { x, y: ny, z }; }
         c.obj.position.set(c.cell.x + 0.5, footY(c.cell.x, c.cell.y, c.cell.z), c.cell.z + 0.5);
         c.wait -= dt;
-        if (c.wait <= 0 && !chooseStep(c)) c.wait = 1 + Math.random() * 2;
+        if (c.wait <= 0) think(c);
       }
       if (c.targetYaw !== null) {
         const d = Math.atan2(Math.sin(c.targetYaw - c.obj.rotation.y), Math.cos(c.targetYaw - c.obj.rotation.y));
@@ -2407,7 +2852,7 @@
     if (charList) loadChars(charList);
     undoStack.length = 0;
     refreshUI();
-    if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
+    if (!sky.cycle && typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
     saveLocal();
     store.set(AT_KEY, String(d.savedAt || 0));
     refreshGhost();
@@ -2441,7 +2886,7 @@
     if (!list) { scheduleCloudSave(0); return; }
     const charList = Array.isArray(d.chars) ? decodeChars(d) : null;
     if (sameAsWorld(list, charList, d.island, d.v >= 5 ? decodeDug(d) : null)) {
-      if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
+      if (!sky.cycle && typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
       const needUpgrade = !Array.isArray(d.chars) && chars.length > 0;
       if (ops.length || cloud.pending || needUpgrade) scheduleCloudSave(0); else setSave('saved');
       return;
@@ -2502,7 +2947,7 @@
     const list = decodeCastle(d);
     if (!list) return;
     if (!sameAsWorld(list, Array.isArray(d.chars) ? decodeChars(d) : null, d.island, decodeDug(d))) applyRemote(list, d); // live update from another device
-    else if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
+    else if (!sky.cycle && typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
     setSave('saved');
   }
 
@@ -2646,7 +3091,9 @@
         splash: ['sine', 700, 180, 0.12, 0.3],
         hiss: ['sawtooth', 1200, 300, 0.035, 0.35],
         thud: ['triangle', 140, 70, 0.2, 0.12],
-        dig: ['triangle', 260, 90, 0.22, 0.16]
+        dig: ['triangle', 260, 90, 0.22, 0.16],
+        creak: ['sawtooth', 170, 260, 0.035, 0.32],
+        shut: ['square', 120, 70, 0.1, 0.1]
       }[kind] || ['sine', 300, 200, 0.1, 0.1];
       o.type = spec[0];
       o.frequency.setValueAtTime(spec[1], t);
@@ -2677,6 +3124,10 @@
         o.start(t + at); o.stop(t + at + dur + 0.02);
       };
       if (kind === 'sheep') { tone('sawtooth', 320, 300, 0, 0.45, 0.1); tone('sawtooth', 330, 290, 0.05, 0.4, 0.05); }
+      else if (kind === 'horse') { tone('sawtooth', 480, 920, 0, 0.18, 0.06); tone('sawtooth', 900, 420, 0.18, 0.4, 0.05); tone('triangle', 260, 180, 0.1, 0.4, 0.08); }
+      else if (kind === 'dog') { tone('square', 320, 180, 0, 0.09, 0.07); tone('square', 340, 190, 0.17, 0.09, 0.07); }
+      else if (kind === 'owl') { tone('sine', 430, 390, 0, 0.26, 0.16); tone('sine', 410, 360, 0.36, 0.42, 0.16); }
+      else if (kind === 'ghost') { tone('sine', 300, 540, 0, 0.55, 0.08); tone('sine', 540, 280, 0.55, 0.7, 0.07); }
       else if (kind === 'chicken') { tone('square', 700, 900, 0, 0.07, 0.06); tone('square', 650, 1000, 0.1, 0.07, 0.06); tone('square', 600, 1100, 0.2, 0.12, 0.06); }
       else if (kind === 'cat') { tone('sine', 520, 880, 0, 0.18, 0.18); tone('sine', 880, 480, 0.18, 0.25, 0.16); }
       else if (kind === 'queen') { tone('sine', 523, 524, 0, 0.12, 0.14); tone('sine', 659, 660, 0.12, 0.12, 0.14); tone('sine', 784, 785, 0.24, 0.22, 0.14); }
@@ -2778,13 +3229,20 @@
 
   /* day / night */
   let nightT = 0, nightTarget = 0;
-  function setNight(on, instant) {
-    nightTarget = on ? 1 : 0;
-    if (instant || reduceMotion) { nightT = nightTarget; applyNight(nightT); }
+  function showNightButton(on) {
     document.documentElement.classList.toggle('is-night', on);
     $('#ico-moon').hidden = on;
     $('#ico-sun').hidden = !on;
     $('#night').setAttribute('aria-label', on ? 'Switch to day' : 'Switch to night');
+  }
+  function setNight(on, instant) {
+    nightTarget = on ? 1 : 0;
+    if (sky.cycle) { // skip ahead to the middle of the next sunset or sunrise (or straight past it)
+      const { day, dusk, night, dawn } = DAYLEN;
+      sky.clock = on ? day + dusk * (instant ? 1 : 0.6) : instant ? day * 0.2 : day + dusk + night + dawn * 0.6;
+      if (instant) sky.snap = true;
+    } else if (instant || reduceMotion) { nightT = nightTarget; sky.dirty = true; }
+    showNightButton(on);
   }
   function toggleNight() {
     setNight(nightTarget !== 1);
@@ -2793,6 +3251,135 @@
     scheduleCloudSave();
   }
   $('#night').addEventListener('click', toggleNight);
+
+  /* ---------- sky: the day–night cycle and weather ---------- */
+  // With the cycle on, time passes by itself: a day, a sunset, a night and a sunrise, about five
+  // minutes in all. The sun crosses the sky, and the sky glows orange at sunrise and sunset.
+  // Weather (clear, rain, snow) is one cloud of falling drops or flakes that follows the camera.
+  const CYCLE_KEY = 'stack-a-castle:cycle', WEATHER_KEY = 'stack-a-castle:weather';
+  const DAYLEN = { day: 150, dusk: 20, night: 90, dawn: 20 }; // seconds
+  const LOOP = DAYLEN.day + DAYLEN.dusk + DAYLEN.night + DAYLEN.dawn, SPAN = DAYLEN.dawn + DAYLEN.day + DAYLEN.dusk;
+  const savedWeather = store.get(WEATHER_KEY);
+  const sky = { cycle: store.get(CYCLE_KEY) === 'on', clock: 0, glow: 0, sunAt: 0.5, weather: savedWeather === 'rain' || savedWeather === 'snow' ? savedWeather : 'clear', dirty: true };
+  const skyNight = $('.sky-night'), skyDusk = $('.sky-dusk'), skyGrey = $('.sky-grey');
+  for (const el of document.querySelectorAll('.sky')) el.style.transition = 'none'; // the loop sets them every frame
+  function cyclePhase(clock) { // { n: how much night, glow: sunrise/sunset glow, sun: 0 east to 1 west }
+    const c = ((clock % LOOP) + LOOP) % LOOP, { day, dusk, night, dawn } = DAYLEN;
+    if (c < day + dusk) { const k = Math.max(0, (c - day) / dusk); return { n: k, glow: Math.sin(k * Math.PI), sun: (c + dawn) / SPAN }; }
+    if (c < day + dusk + night) return { n: 1, glow: 0, sun: 1 };
+    const k = (c - day - dusk - night) / dawn;
+    return { n: 1 - k, glow: Math.sin(k * Math.PI), sun: (k * dawn) / SPAN };
+  }
+  const DUSK = { sky: new THREE.Color('#ffb37a'), sun: new THREE.Color('#ff9a4a') };
+  function applySky() { // lights and sky for the time of day, the sunset glow and the weather
+    applyNight(nightT);
+    if (sky.glow > 0) { hemi.color.lerp(DUSK.sky, sky.glow * 0.55); sun.color.lerp(DUSK.sun, sky.glow * 0.8); }
+    if (sky.cycle) { // the sun crosses the sky (shadows swing round and grow long at sunset)
+      const a = sky.sunAt * Math.PI;
+      sunOffset.set(Math.cos(a) * 48, 8 + Math.sin(a) * 46, 22).lerp(NIGHT.sunPos, nightT);
+    }
+    if (sky.weather === 'rain') { hemi.intensity *= 0.75; sun.intensity *= 0.5; }
+    else if (sky.weather === 'snow') { hemi.intensity *= 0.92; sun.intensity *= 0.75; }
+    skyNight.style.opacity = nightT;
+    skyDusk.style.opacity = sky.glow;
+    skyGrey.style.opacity = sky.weather === 'rain' ? 0.6 * (1 - nightT * 0.6) : sky.weather === 'snow' ? 0.35 * (1 - nightT * 0.6) : 0;
+  }
+  function stepSky(dt) {
+    if (sky.cycle) {
+      sky.clock += dt;
+      const ph = cyclePhase(sky.clock), k = sky.snap ? 1 : dt / 0.9; // ease over jumps (the moon button)
+      const ease = (from, to) => from + Math.max(-k, Math.min(k, to - from));
+      nightT = ease(nightT, ph.n); sky.glow = ease(sky.glow, ph.glow); sky.sunAt = ease(sky.sunAt, ph.sun);
+      sky.snap = false; sky.dirty = true;
+      const dark = ph.n > 0.5;
+      if (dark !== (nightTarget === 1)) { nightTarget = dark ? 1 : 0; showNightButton(dark); }
+    } else if (nightT !== nightTarget) {
+      const step = dt / 0.9;
+      nightT = nightTarget > nightT ? Math.min(nightTarget, nightT + step) : Math.max(nightTarget, nightT - step);
+      sky.dirty = true;
+    }
+    if (sky.dirty) { sky.dirty = false; applySky(); }
+  }
+  function setCycle(on) {
+    sky.cycle = on;
+    store.set(CYCLE_KEY, on ? 'on' : 'off');
+    $('#cycle-state').textContent = on ? 'On' : 'Off';
+    if (on) sky.clock = nightTarget === 1 ? DAYLEN.day + DAYLEN.dusk : DAYLEN.day * 0.2;
+    else { sky.glow = 0; nightTarget = nightT > 0.5 ? 1 : 0; showNightButton(nightTarget === 1); }
+    sky.dirty = true;
+  }
+  $('#m-cycle').addEventListener('click', () => {
+    setCycle(!sky.cycle);
+    toast(sky.cycle ? 'Days go by on their own now, with a sunrise and a sunset. The moon button skips ahead.' : 'Day and night stay the way you set them.');
+  });
+
+  // weather: drops or flakes in a box between the camera and where it looks; they wrap around as it moves
+  const NDROPS = 2400, dropPos = new Float32Array(NDROPS * 3), dropSeed = new Float32Array(NDROPS);
+  for (let i = 0; i < NDROPS; i++) { dropPos[i * 3] = (Math.random() - 0.5) * 70; dropPos[i * 3 + 1] = Math.random() * 34; dropPos[i * 3 + 2] = (Math.random() - 0.5) * 70; dropSeed[i] = Math.random(); }
+  const dropGeo = new THREE.BufferGeometry();
+  dropGeo.setAttribute('position', new THREE.BufferAttribute(dropPos, 3).setUsage(THREE.DynamicDrawUsage));
+  const DROP_TEX = {
+    rain: (() => { const c = cv(16, 64), g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 64); gr.addColorStop(0, 'rgba(210,225,255,0)'); gr.addColorStop(1, 'rgba(210,225,255,0.95)'); g.fillStyle = gr; g.fillRect(6.5, 0, 3, 64); return new THREE.CanvasTexture(c); })(),
+    snow: (() => { const c = cv(32, 32), g = c.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.5, 'rgba(255,255,255,0.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return new THREE.CanvasTexture(c); })()
+  };
+  const dropMat = new THREE.PointsMaterial({ size: 0.6, map: DROP_TEX.rain, transparent: true, depthWrite: false, opacity: 0.75 });
+  dropMat.onBeforeCompile = (sh) => { // drops right by the camera don't grow huge, far ones don't vanish
+    sh.vertexShader = sh.vertexShader.replace('#include <fog_vertex>', 'gl_PointSize = clamp(gl_PointSize, 2.0, 44.0);\n#include <fog_vertex>');
+  };
+  const drops = new THREE.Points(dropGeo, dropMat);
+  const dropBox = new THREE.Vector3();
+  drops.frustumCulled = false;
+  scene.add(drops);
+  function stepWeather(dt, t) {
+    if (sky.weather === 'clear') return;
+    const rain = sky.weather === 'rain', p = dropPos, dist = camera.position.distanceTo(controls.target);
+    const box = dropBox.copy(controls.target).lerp(camera.position, 0.3); // the box sits a little in front of the camera
+    const W = Math.max(24, Math.min(110, dist * 0.8)), H = Math.max(20, Math.min(60, W * 0.7)), bottom = Math.min(box.y - H / 2, -1), top = bottom + H;
+    const fall = rain ? 24 : 2.2, cx = box.x, cz = box.z;
+    const wrap = (v, c) => c + ((((v - c) + W / 2) % W) + W) % W - W / 2;
+    for (let i = 0; i < NDROPS; i++) {
+      const j = i * 3, sd = dropSeed[i];
+      p[j + 1] -= fall * dt * (0.8 + sd * 0.4);
+      if (!rain) { p[j] += Math.sin(t * 0.9 + sd * 20) * 0.6 * dt; p[j + 2] += Math.cos(t * 0.7 + sd * 17) * 0.5 * dt; }
+      if (p[j + 1] < bottom) p[j + 1] += H; else if (p[j + 1] > top) p[j + 1] = bottom + ((p[j + 1] - bottom) % H);
+      p[j] = wrap(p[j], cx); p[j + 2] = wrap(p[j + 2], cz);
+    }
+    dropGeo.attributes.position.needsUpdate = true;
+  }
+  let rainNoise = null;
+  function rainSound() { // a soft rain hiss while it rains (sound on)
+    const want = soundOn && sky.weather === 'rain' && !!actx;
+    if (want && !rainNoise) {
+      try {
+        const len = actx.sampleRate * 2, buf = actx.createBuffer(1, len, actx.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+        src.buffer = buf; src.loop = true; f.type = 'lowpass'; f.frequency.value = 1400; g.gain.value = 0.045;
+        src.connect(f); f.connect(g); g.connect(actx.destination); src.start();
+        rainNoise = src;
+      } catch (e) { rainNoise = null; }
+    } else if (!want && rainNoise) { try { rainNoise.stop(); } catch (e) { /* already stopped */ } rainNoise = null; }
+  }
+  function setWeather(w) {
+    sky.weather = w;
+    store.set(WEATHER_KEY, w);
+    $('#weather-state').textContent = w === 'rain' ? 'Rain' : w === 'snow' ? 'Snow' : 'Clear';
+    drops.visible = w !== 'clear';
+    dropMat.map = DROP_TEX[w === 'snow' ? 'snow' : 'rain'];
+    dropMat.size = w === 'snow' ? 0.5 : 1.5;
+    dropMat.opacity = w === 'snow' ? 0.95 : 0.55;
+    dropMat.needsUpdate = true;
+    sky.dirty = true;
+    rainSound();
+  }
+  $('#m-weather').addEventListener('click', () => {
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) { /* no audio */ }
+    const next = sky.weather === 'clear' ? 'rain' : sky.weather === 'rain' ? 'snow' : 'clear';
+    setWeather(next);
+    toast(next === 'rain' ? 'It’s raining!' : next === 'snow' ? 'It’s snowing!' : 'The sky is clear again.');
+  });
+  $('#cycle-state').textContent = sky.cycle ? 'On' : 'Off';
+  setWeather(sky.weather);
 
   /* menu */
   const menu = $('#menu'), moreBtn = $('#more');
@@ -2849,6 +3436,7 @@
     store.set(SOUND_KEY, soundOn ? 'on' : 'off');
     $('#sound-state').textContent = soundOn ? 'On' : 'Off';
     if (soundOn) blip('place');
+    rainSound();
   });
   $('#sound-state').textContent = soundOn ? 'On' : 'Off';
   $('#m-clear').addEventListener('click', () => {
@@ -3104,14 +3692,15 @@
     const rect = canvas.getBoundingClientRect();
     ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
     raycaster.setFromCamera(ndc, camera);
-    const ch = charHits.length ? raycaster.intersectObjects(charHits, false)[0] : null;
+    const live = charHits.filter((h) => h.parent && h.parent.visible); // hidden characters (Peek, the ghost by day) can't be tapped
+    const ch = live.length ? raycaster.intersectObjects(live, false)[0] : null;
     const res = pickCell(raycaster.ray);
     if (ch && (!res || ch.distance < res.dist)) return { char: ch.object.userData.char };
     return res;
   }
   function charTarget(c) {
     if (!inBounds(c.x, c.y, c.z) || (peek && c.y >= peek)) return null;
-    return selected === 'dragon' ? Math.max(0, c.y) : findStand(c.x, c.y, c.z);
+    return selected === 'dragon' || selected === 'ghost' ? Math.max(0, c.y) : findStand(c.x, c.y, c.z); // flyers don't need ground
   }
   function facingRot() {
     const dx = camera.position.x - controls.target.x, dz = camera.position.z - controls.target.z;
@@ -3130,6 +3719,8 @@
       else poke(p.char);
       return;
     }
+    const door = !(mode === 'erase' || forceErase) && p.remove && world.get(K(p.remove.x, p.remove.y, p.remove.z));
+    if (door && door.t === 'door') { setDoor(door, !door.open); hideHint(); return; } // tap a door to open or close it
     if (mode === 'erase' || forceErase) {
       if (p.remove && removeBlock(p.remove.x, p.remove.y, p.remove.z, { record: true })) {
         natureAfter([[p.remove.x, p.remove.y, p.remove.z]]);
@@ -3155,7 +3746,9 @@
   let lastMouse = null;
   function updateGhost(clientX, clientY) {
     const p = pick(clientX, clientY);
-    if (!p || p.char) { ghost.visible = false; return; }
+    const overDoor = !!p && !p.char && mode !== 'erase' && !!p.remove && (world.get(K(p.remove.x, p.remove.y, p.remove.z)) || {}).t === 'door';
+    canvas.style.cursor = overDoor ? 'pointer' : '';
+    if (!p || p.char || overDoor) { ghost.visible = false; return; }
     if (mode !== 'erase' && selected === 'dig') { if (p.dig) showGhost(p.dig, 'erase'); else ghost.visible = false; return; }
     if (mode !== 'erase' && LANDMARK[selected]) {
       const spot = landmarkSpot(LANDMARK[selected], p.place, facing4());
@@ -3288,11 +3881,9 @@
     // zoomed far out over a big island, move the near limit out too, so distant surfaces don't flicker
     const near = Math.min(4, Math.max(0.1, camera.position.distanceTo(controls.target) / 600));
     if (Math.abs(near - camera.near) > camera.near * 0.1) { camera.near = near; camera.updateProjectionMatrix(); }
-    if (nightT !== nightTarget) {
-      const step = dt / 0.9;
-      nightT = nightTarget > nightT ? Math.min(nightTarget, nightT + step) : Math.max(nightTarget, nightT - step);
-      applyNight(nightT);
-    }
+    stepSky(dt);
+    stepWeather(dt, t);
+    if (swinging.size || autoDoors.size) stepDoors(dt);
     if (!reduceMotion) {
       waveFlag(t);
       T.water.offset.set(t * 0.03, t * 0.012);
@@ -3364,9 +3955,9 @@
     if (!charList) { charList = starterChars(); }
     loadChars(charList);
     if (!store.get(CHARS_KEY)) store.set(CHARS_KEY, JSON.stringify(serializeChars()));
-    applyNight(0);
     const nightOn = typeof data.night === 'boolean' ? data.night : store.get(NIGHT_KEY) === '1';
-    if (nightOn) setNight(true, true);
+    setNight(nightOn, true);
+    stepSky(0);
     layout();
     resetView();
     refreshUI();

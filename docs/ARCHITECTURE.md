@@ -26,7 +26,7 @@ Drawing one mesh per block got slow on tablets once a castle had a few hundred b
 
 - **Batches.** Each part of a piece (a tree's trunk, its two leaf clumps) is one `InstancedMesh` that holds every block of that kind. A batch is built from `makePiece(id, 0)` the first time that piece appears. Adding a block writes its position and turn into the next free slot; removing one moves the last block into the gap. A 2,000-block castle with 20 characters went from about 4,400 draw calls per frame to about 200.
 - Batches have `frustumCulled = false`. Three.js r128 would otherwise decide whether to draw the whole batch from the first block's position alone.
-- **Solo pieces** (`SOLO`: torch, candles, fireplace) have flickering flames, so each is its own object, animated through the `flickers` set. Lamps and lanterns are batched; only their glow sprites are separate.
+- **Solo pieces** (`SOLO`: torch, candles, fireplace, door) are each their own object. Torches, candles and fireplaces have flickering flames, animated through the `flickers` set; a door swings open (see **Doors**). Lamps and lanterns are batched; only their glow sprites are separate.
 - Glow sprites are switched off in daylight (`M.glow.visible`), so they cost nothing by day.
 - **Popping in.** A newly placed block is shown as its own object (`rec.temp`) while it grows, then joins its batch. Castles over 1,200 blocks appear at once instead of popping.
 - **Resting pieces** (`RESTS`: candles, flowers, rug) are drawn lower when the piece under them is shorter than a block (heights in `TOP`), so candles stand on a table instead of floating above it. They move when the piece under them is added or removed.
@@ -56,7 +56,22 @@ To add a block:
 
 ### Furniture
 
-Twelve pieces in the **Furniture** tab: table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench and barrel. All are original designs built from simple shapes, and each fits in one square. Tables placed side by side join into one long table. Candles and the fireplace glow at night.
+Thirteen pieces in the **Furniture** tab: table, chair, bed, bookshelf, fireplace, candles, throne, chest, rug, flowers, bench, barrel and well. All are original designs built from simple shapes, and each fits in one square. Tables placed side by side join into one long table. Candles and the fireplace glow at night.
+
+### More pieces (v1.3.4)
+
+- **Arch** (Castle): a stone block with an arched opening. Characters walk through it (`PASS`).
+- **Banners** (Castle): red, blue, gold and green cloths with a little castle on them (`bannerCanvas`), hanging from a rod at the back of the square, so placed in front of a wall they hang on it. The cloth casts a banner-shaped shadow (`customDepthMaterial`).
+- **Flower bed** (Nature): a low planter full of flowers.
+- **Bridge** (Build): a deck at the bottom of the square with railings on both sides. Characters walk on it, even with nothing under it (`HOLDS`).
+- **Ladder** (Build): hangs on the back of its square like a banner. Characters climb straight up and down a column of ladders, and step off at the top (`moves()`).
+- **Well** (Furniture): a stone ring with water, a wooden frame, a little roof and a bucket.
+
+New pieces go at the end of their tab, so the number keys for older pieces stay the same.
+
+### Doors
+
+A door's panel and knob hang in a hinge group at one side (`userData.hinge`). Tapping a door in any mode except Erase calls `setDoor()` instead of building against it; the hinge eases to about 100 degrees open (`DOOR_OPEN`) in a third of a second (`stepDoors()`, run each frame while a door is moving). A character stepping into a closed door opens it (`stepTo()`); doors opened that way (`autoDoors`) close again once the doorway has been empty for 1.2 seconds. Whether a door is open is kept on the block (`rec.open`, `rec.swing`) only for the view: it isn't saved and isn't an undo step. Characters could always walk through doors (`PASS`).
 
 ### Landmarks
 
@@ -92,7 +107,7 @@ How it works (the **nature** section):
 
 ### The sample castle
 
-`sampleWorld()` builds the castle a new player starts with (and **⋯ → Build sample castle**): a moat dug two squares deep and filled with water (so it has banks and stays put when nature is on), a bridge level with the grass, a cobblestone path set into the ground, a gatehouse with an open gateway, curtain walls (31 × 31), four round towers with turrets, and a 19 × 13 keep. The keep has three stories, 4 squares each (ground floor y 0–3, wooden floors at y 4 and 8, roof at 12), so Peek shows one story at a time. Inner walls split the lower two stories into three rooms each, with open doorways (`doorway()`: an empty square with a gate arch above). `stairs()` builds a staircase and opens the floor above it, so characters can climb from floor to floor. It returns its blocks and its dug squares; `sampleChars()` puts the characters in their rooms.
+`sampleWorld()` builds the castle a new player starts with (and **⋯ → Build sample castle**): a moat dug two squares deep and filled with water (so it has banks and stays put when nature is on), a bridge level with the grass, a cobblestone path set into the ground, a gatehouse with an open gateway, curtain walls (31 × 31), four round towers with turrets, and a 19 × 13 keep. The keep has three stories, 4 squares each (ground floor y 0–3, wooden floors at y 4 and 8, roof at 12), so Peek shows one story at a time. Inner walls split the lower two stories into three rooms each, with open doorways (`doorway()`: an empty square with a gate arch above). `stairs()` builds a staircase and opens the floor above it, so characters can climb from floor to floor. Banners hang on the keep and the gatehouse, and the courtyard has a fountain, benches, a well and flower beds. It returns its blocks and its dug squares; `sampleChars()` puts the characters in their rooms.
 
 Castles of more than about 2,000 blocks above ground rise out of the ground when built (the block group is stretched up from flat) instead of popping in block by block, which would mean thousands of separate objects for a moment.
 
@@ -107,14 +122,26 @@ The eye button (or **P**) cuts away everything above a height so you can look in
 
 ## Characters
 
-Characters (`chars`) are separate from blocks and are not part of the grid map. Each one stores a cell, a home cell, and a small state machine:
+Characters (`chars`) are separate from blocks and are not part of the grid map. There are ten kinds (`CHAR_IDS`): knight, queen, sheep, chicken, cat, dragon, horse, dog, owl and ghost. Each one stores a cell, a home cell, and what it's doing:
 
-- **Idle:** wait a random time, then pick a neighboring cell. Steps can go up one block or down one or two. The character is pulled back toward home if it wanders more than 9 cells away.
-- **Walking:** move to the chosen cell over a set time, with a bounce and a turn toward the direction of travel.
-- A cell is walkable if it's empty, or is a gate, door or rug, and it stands on the ground or a solid block. Water, lava, roofs, flags, torches, trees, fences, lanterns and doors don't count as solid ground, and nor do tables, chairs, benches, thrones, candles, flowers and rugs. Characters can climb onto beds, chests, barrels, bookshelves and fireplaces, and stand at the piece's real height (`TOP`).
+- **Idle:** wait a random time (`CHAR_SPEC`: the horse is slow and calm, the dog quick), then `think()` decides what's next.
+- **Walking:** move to the chosen cell over a set time, with a bounce and a turn toward the direction of travel. Steps can go up one block or down one or two (`moves()`), and up or down a column of ladders.
+- **Ladders:** a character on a ladder sometimes starts climbing (`c.climbing`); it keeps going to the top, steps off onto the highest square there, or climbs down to the bottom.
+- **Wandering** (`wander()`): a random step, preferring path squares (cobblestone, planks, bridges, slabs, stairs and rugs, `PATHY`) and carrying on along a path instead of turning back. A character more than 9 squares from home is pulled back.
+- **Trips** (`planTrip()`): a short walk found with a breadth-first search (`findPath()`, at most 2,500 squares searched) to a seat, a bed or something warm. A seat or bed is kept for the character as soon as it sets off (`taken`, `c.claim`), so two characters don't head for the same one. When it arrives (`arrive()`), it sits or lies down. If the way gets blocked or the piece is removed (`tripFailed()`), it lets go and, at night, thinks again.
+- **Sitting:** now and then by day, the knight, queen, cat and dog (`SITTERS`) walk to a chair, bench or throne and sit for a while.
+- **Night** (`isNight()`, the night amount above 0.6): once each night the same four look for a free bed they can reach and sleep in it, lying down with a floating "Zzz". The others (and those without a bed) gather around the nearest torch, fireplace, lamp, lantern or candles (`WARM`) and stay within 2 squares of it. At sunrise everyone gets up.
+- A cell is walkable if it's empty, or is a gate, door, rug, arch, bridge or ladder (`PASS`), and it stands on the ground or a solid block (or is a bridge or ladder itself, `HOLDS`). Water, lava, roofs, flags, banners, torches, trees, fences, lanterns, doors, wells and flower beds don't count as solid ground, and nor do tables, chairs, benches, thrones, candles, flowers and rugs (`NOSTAND`). Characters can climb onto beds, chests, barrels, bookshelves and fireplaces, and stand at the piece's real height (`TOP`).
 - Each character is built from many small shapes. Shapes that share a material are merged into one mesh, once per kind, so a character costs a handful of draw calls instead of about 15.
 - If a block is placed where a character stands, or the block under it is removed, it moves to the nearest standing spot in that column.
-- The dragon ignores the grid and circles 7 cells around its home, 7 cells up.
+- **Flyers** (`FLYERS`: dragon, owl, ghost) ignore the grid and are saved at their home. The dragon circles 7 cells around its home, 7 cells up; now and then it lands on the highest nearby spot it can stand on (a tower top, `perchFor()`), rests, and takes off again. The owl sits on its home square by day, turning its head, and flies small circles at night. The ghost drifts around its home, through walls, and fades in only after dark (`driftGhost()`).
+
+## Sky: day, night and weather
+
+- **Night amount.** `nightT` goes from 0 (day) to 1 (night). `applyNight()` blends the lights, glowing windows, clouds and water between the `DAY` and `NIGHT` settings; `applySky()` adds the sunrise and sunset glow and the weather on top. The moon button sets `nightTarget`, and `nightT` eases toward it in under a second.
+- **Day and night cycle** (⋯ menu, kept in `stack-a-castle:cycle`, off by default). A clock runs through a loop (`DAYLEN`): 150 seconds of day, a 20-second sunset, 90 seconds of night and a 20-second sunrise. `cyclePhase()` turns the clock into the night amount, a glow (0 to 1, highest halfway through sunset and sunrise) and the sun's place in the sky, which moves the sun light from east to west so shadows swing round. The glow tints the light orange and fades in an orange sky layer (`.sky-dusk`). The moon button skips ahead to halfway through the next sunset or sunrise, and the change eases in. Automatic changes aren't saved; the castle only saves day or night when someone presses the button. While the cycle runs, day or night from another device is ignored.
+- **Weather** (⋯ menu, kept in `stack-a-castle:weather`: clear, rain or snow). One `THREE.Points` cloud of 2,400 drops or flakes fills a box a little in front of the camera, sized to the zoom. Drops fall, wrap round to the top, and wrap sideways as the camera moves, so the box never runs out. Flakes drift as they fall. Their size on screen is clamped (a small addition to the points shader), so drops right by the camera don't grow huge. Rain and snow dim the light a little and fade in a grey sky layer (`.sky-grey`). With sound on, rain plays a soft noise (filtered white noise, made in code).
+- Neither switch changes the castle or the save.
 
 ## Undo
 
