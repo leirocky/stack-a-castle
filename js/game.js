@@ -1600,7 +1600,7 @@
     }
     for (let z = 16; z <= 22; z++) dig(0, -1, z, 'cobble'); // a path set into the ground
     for (let x = -4; x <= 4; x++) for (let z = -7; z <= -1; z++) dig(x, -1, z, 'cobble'); // a stone floor in the great hall
-    for (let z = 14; z <= 15; z++) { for (let x = -1; x <= 1; x++) base.put(x, 0, z, 'wood'); base.put(-1, 1, z, 'fence', 1); base.put(1, 1, z, 'fence', 1); } // bridge
+    for (let z = 14; z <= 15; z++) { for (let x = -1; x <= 1; x++) base.put(x, -1, z, 'wood'); base.put(-1, 0, z, 'fence', 1); base.put(1, 0, z, 'fence', 1); } // bridge, level with the grass
     base.put(-1, 0, 16, 'torch'); base.put(1, 0, 16, 'torch');
 
     // curtain wall with arrow slits and battlements
@@ -1625,7 +1625,7 @@
       if (y === 7) s.put(x, 8, z, Math.abs(x) === 3 && z === 12 ? 'tower' : 'battlement');
     }
     for (let x = -2; x <= 2; x++) for (let y = 1; y <= 6; y++) s.put(x, y, 11, 'stone');
-    for (let z = 10; z <= 12; z++) { s.put(0, 1, z, 'gate', 0); s.put(0, 2, z, 'stone'); }
+    for (let z = 10; z <= 12; z++) { base.del(0, 0, z); s.put(0, 2, z, 'gate', 0); } // an open gateway, two high, with an arch on top
     for (const x of [-3, 3]) { for (let y = 1; y <= 8; y++) s.put(x, y, 12, 'tower'); s.put(x, 9, 12, 'roof'); }
     s.put(0, 9, 11, 'flag');
 
@@ -1642,7 +1642,7 @@
       const edge = x === K0 || x === K1 || z === Z0 || z === Z1;
       s.put(x, 13, z, edge ? 'battlement' : 'slab');
     }
-    s.put(0, 1, Z1, 'gate', 0);
+    base.del(0, 0, Z1); s.put(0, 2, Z1, 'gate', 0); // the keep's door, open, with an arch on top
     for (let y = 13; y <= 17; y++) for (let x = -1; x <= 1; x++) for (let z = -5; z <= -3; z++) {
       if (x === 0 && z === -4) continue;
       s.put(x, y, z, y === 15 && (x === 0 || z === -4) ? 'window' : 'brick');

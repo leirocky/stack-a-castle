@@ -1,10 +1,10 @@
 # Project progress
 
-_Last updated: 27 Nov 2026 · Current version: **v1.3.1**_
+_Last updated: 27 Nov 2026 · Current version: **v1.3.2**_
 
 ## Where things stand
 
-**v1.3.1 is built** (27 Nov 2026): nature (water flows, lava cools, ice and snow melt, sand falls), a **Dig** tool, and a bigger sample castle with a real moat dug into the ground. It goes live when its pull request is merged. **v1.3.0** (islands start at 300 × 300 and grow to 1000 × 1000) is live. Both are part of **v1.3, "A bigger, livelier island"**; still to come in v1.3: new and smarter characters, more pieces, a day–night cycle and weather. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live too; two checks on real devices are still open (see **Next up**).
+**v1.3.2 is built** (27 Nov 2026): the sample castle's bridge is level with the grass and its doorways are open and easy to see. It goes live when its pull request is merged. **v1.3.1** (nature, the **Dig** tool, and a bigger sample castle with a real moat dug into the ground) and **v1.3.0** (islands start at 300 × 300 and grow to 1000 × 1000) are live. Both are part of **v1.3, "A bigger, livelier island"**; still to come in v1.3: new and smarter characters, more pieces, a day–night cycle and weather. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live too; two checks on real devices are still open (see **Next up**).
 
 v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file backups, and online with Google sign-in (Firebase), confirmed with a real Google sign-in on the live site.
 
@@ -12,6 +12,7 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 
 | Date | What changed |
 |---|---|
+| 27 Nov 2026 | **Fix** (v1.3.2): the sample castle's bridge was a raised box that hid the gate, and its doorways were small arches. The bridge is now level with the grass, and the gatehouse and keep have open doorways two high with arches on top. Checked that a character can walk from the path, over the bridge and through the gate into the keep's hall. |
 | 27 Nov 2026 | **Nature** (v1.3.1): water, lava, ice, snow and sand follow simple rules after a player changes something nearby; one Undo takes back the change and its effects; **⋯ → Nature** turns it off. **Dig** tool for holes up to 3 deep, drawn with a grass mask and dirt walls. **New sample castle**: moat dug two deep and filled with water, gatehouse, four towers with turrets, a furnished three-story keep. The pyramid landmark got hidden stone so its sand doesn't fall. Save format v5 stores holes. |
 | 27 Nov 2026 | Tested (v1.3.1): each nature rule and its Undo, the Nature switch, a waterfall off a wall, digging with clicks (deeper, then sideways at the bottom), water running into holes, a hole dug beside the moat filling while building next to the moat doesn't spill it, reload, files, online saving (simulated Firebase), and the live v1.3.0 game refusing a v5 save. |
 | 27 Nov 2026 | **Bigger island:** starts at 300 × 300 (was 100 × 100) and grows from **⋯ → Bigger island** by 50 squares a side, up to 1000 × 1000; Undo shrinks it. Existing castles move over automatically. The rock and clouds scale with it, and the camera's near limit moves out when zoomed far out (this stopped stripes flickering on the grass). Save format v4 stores the size. |

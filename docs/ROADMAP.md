@@ -1,6 +1,6 @@
 # Roadmap
 
-_Current version: **v1.3.1** (27 Nov 2026). Last updated: 27 Nov 2026._
+_Current version: **v1.3.2** (27 Nov 2026). Last updated: 27 Nov 2026._
 
 This lists planned milestones in order. Each one has a goal, what's in it, and how we'll know it's done. Sizes are rough: **S** is an evening, **M** a few sessions, **L** a week or more of sessions. Plans can change; when they do, update this file and [PROGRESS.md](PROGRESS.md).
 

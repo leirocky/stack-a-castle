@@ -2,6 +2,14 @@
 
 All notable changes, newest first. Planned work is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## v1.3.2 — 27 Nov 2026
+
+A fix for the sample castle's way in.
+
+- The bridge over the moat is now level with the grass, with fences as railings. Before, it was a raised wooden box that hid the gate.
+- The gatehouse and the keep have open doorways two squares high with an arch on top, instead of small arches you could barely see.
+- Characters could always walk in; now you can see the way in too. Castles already built from the old sample keep their old bridge; **⋯ → Build sample castle** builds the new one (Undo brings your castle back).
+
 ## v1.3.1 — 27 Nov 2026
 
 Nature, digging, and a new sample castle.
