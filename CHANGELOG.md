@@ -2,6 +2,16 @@
 
 All notable changes, newest first. Planned work is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## v1.3.0 — 27 Nov 2026
+
+A much bigger island.
+
+- Every island now starts at **300 × 300** squares (it was 100 × 100). Existing castles move onto the bigger island automatically, right where they were.
+- **⋯ → Bigger island** makes it grow by 50 squares on every side, up to **1000 × 1000**. The grass spreads out smoothly, and Undo makes it smaller again.
+- The rock under the island gets deeper and the clouds bigger as the island grows, and zooming far out no longer makes the grass flicker.
+- If a landmark doesn't fit near the edge, the message suggests making the island bigger.
+- Save format version 4 stores the island size. Older saves still load. Older copies of the game (1.1 and 1.2) left open in a tab say "Update needed" instead of overwriting a bigger island.
+
 ## v1.2.0 — 26 Nov 2026
 
 Landmarks.

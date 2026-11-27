@@ -1,6 +1,6 @@
 # Roadmap
 
-_Current version: **v1.2.0** (26 Nov 2026). Last updated: 26 Nov 2026._
+_Current version: **v1.3.0** (27 Nov 2026). Last updated: 27 Nov 2026._
 
 This lists planned milestones in order. Each one has a goal, what's in it, and how we'll know it's done. Sizes are rough: **S** is an evening, **M** a few sessions, **L** a week or more of sessions. Plans can change; when they do, update this file and [PROGRESS.md](PROGRESS.md).
 
@@ -8,9 +8,10 @@ This lists planned milestones in order. Each one has a goal, what's in it, and h
 |---|---|---|
 | [v1.0](#v10--the-castle-builder-released) | The castle builder | ✅ Released 26 Nov 2026 |
 | [v1.1](#v11--smooth-and-solid) | Smooth and solid (plus furniture) | ✅ Built 26 Nov 2026 · two checks on real devices left |
-| [v1.2](#v12--landmarks-released) | Landmarks | ✅ Built 26 Nov 2026 |
-| [v1.3](#v13--a-livelier-island) | A livelier island | 🔜 Next |
-| [v1.4](#v14--many-castles) | Many castles | Planned |
+| [v1.2](#v12--landmarks-released) | Landmarks | ✅ Released 26 Nov 2026 |
+| [v1.3](#v13--a-bigger-island-released) | A bigger island | ✅ Built 27 Nov 2026 |
+| [v1.4](#v14--a-livelier-island) | A livelier island | 🔜 Next |
+| [v1.5](#v15--many-castles) | Many castles | Planned |
 | [v2.0](#v20--quests-and-challenges) | Quests and challenges | Planned |
 | [v3.0](#v30--build-together) | Build together | Idea |
 
@@ -54,7 +55,19 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 
 **Done when:** each landmark can be placed, changed block by block, undone in one step, and saved like any castle.
 
-## v1.3 — A livelier island
+## v1.3 — A bigger island (released)
+
+**Goal:** room for landmarks and big builds, asked for by the family. (The milestones after this one each moved down one number again.)
+
+| Item | Size |
+|---|---|
+| ✅ Islands start at 300 × 300 instead of 100 × 100; existing castles move over automatically | S |
+| ✅ **Bigger island** in the ⋯ menu: grows by 50 squares on every side, up to 1000 × 1000, and Undo shrinks it | M |
+| ✅ Save format v4 stores the island size, with a guard so older copies of the game don't overwrite a bigger island | S |
+
+**Done when:** an existing castle opens on the bigger island, the island can grow to 1000 × 1000 and back, and the size is kept on the device, in files and online.
+
+## v1.4 — A livelier island
 
 **Goal:** more to build and more going on around the castle.
 
@@ -68,7 +81,7 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 
 **Done when:** the new pieces and characters are in their tabs, characters visibly use paths and benches, and weather and the cycle can be switched on and off.
 
-## v1.4 — Many castles
+## v1.5 — Many castles
 
 **Goal:** keep several castles and pick which one to play.
 
@@ -77,9 +90,9 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 | Castle slots: create, name, switch and delete castles (each saved online and on the device) | M |
 | A "My castles" screen with a small picture of each | M |
 | Starter templates besides the sample castle (village, tower, island fort) | S |
-| Save format v4: one document per castle; older saves move over automatically | S |
+| Save format v5: one document per castle; older saves move over automatically | S |
 
-**Done when:** a signed-in player can keep at least five named castles that appear on every device, and v3 saves still load.
+**Done when:** a signed-in player can keep at least five named castles that appear on every device, and v3 and v4 saves still load.
 
 ## v2.0 — Quests and challenges
 

@@ -4,7 +4,9 @@ Everything runs in the browser. `index.html` holds the markup, `css/style.css` t
 
 ## The world
 
-- The island is a grid of cells, `x` and `z` from −50 to 49, `y` from 0 to 31. Ground level is `y = 0`.
+- The island is a grid of cells, `x` and `z` from `−half` to `half − 1`, `y` from 0 to 31. Ground level is `y = 0`.
+- **Island size.** Every castle starts on a 300 × 300 island (`START_HALF = 150`). **⋯ → Bigger island** adds 50 squares on every side (`GROW`), up to 1000 × 1000 (`MAX_HALF = 500`); Undo shrinks it again, but never past a block. `setIsland(h)` changes the edges used for building and tapping, how far the camera can zoom out, and keeps characters on the island. The island mesh is built at 100 × 100 and scaled (`sizeIsland`), easing smoothly to the new size; the grass texture is shifted as it grows so each grass square stays lined up with the grid. The size is saved with the castle; `islandFor()` works out the island a castle needs (its saved size, at least the starting size, and room for every block).
+- When zoomed far out, the camera's near limit moves out with it, so distant surfaces don't flicker.
 - Placed blocks live in a `Map` called `world`, keyed `"x,y,z"`. Each record holds the piece type (`t`), rotation (`r`), its `x, y, z`, and how it is drawn (see **Drawing blocks**).
 - Tapping casts a ray from the camera and walks it square by square through the grid (a "voxel walk", `pickCell`) until it reaches a filled square or the grass. Hitting the side of a block places a new block against that face; hitting the grass places it on the ground. The whole square counts as the block, so odd shapes like flags and roofs are easy to tap. The walk takes the same time whether the castle has 10 blocks or 10,000.
 - Characters are tapped with an ordinary raycast against an invisible box on each one. Whichever is nearer, character or block, wins.
@@ -105,15 +107,16 @@ Anything built during the second or two of connecting is replayed on top of whic
 
 **Saves from a newer version.** If the online castle, or an opened file, uses pieces or characters this copy of the game doesn't know, it was saved by a newer version. The game leaves the castle on screen alone and asks the player to reload. For an online save it also stops saving online for that visit, so it can't overwrite the newer castle. (Version 1.0 doesn't have this check; see the known issues in PROGRESS.md.)
 
-## Save format (version 3)
+## Save format (version 4)
 
 Used for online saves and for **Save to a file**:
 
 ```json
 {
-  "v": 3,
-  "pieces": ["stone", "brick", "..."],
-  "cells": [0, 0, 5, 3, 0,   1, 0, 5, 0, 0],
+  "v": 4,
+  "island": 300,
+  "pieces": ["stone", "brick", "...", "needs-newer-game"],
+  "cells": [0, 0, 5, 3, 0,   1, 0, 5, 0, 0,   0, 0, 0, 56, 0],
   "charKinds": ["knight", "queen", "sheep", "chicken", "cat", "dragon"],
   "chars": [0, 0, 0, 3],
   "night": false,
@@ -126,3 +129,10 @@ Used for online saves and for **Save to a file**:
 - Pieces are saved by name through the `pieces` list, so reordering or adding pieces never breaks old saves.
 - Files without `chars` (version 2) load fine; the device keeps its own characters.
 - Versions 1.1 and 1.2 added furniture and three blocks (iron, clock, teal) without changing the format: new pieces just add names to `pieces`. Landmarks are saved as their blocks.
+
+**What changed in version 4** (game v1.3):
+
+- `island` is the island's width in squares (300 to 1000). On the device it is kept in `stack-a-castle:island`.
+- The last entry in `pieces` is always the made-up name `needs-newer-game`, and the last 5 numbers in `cells` use it. This is a guard for older copies of the game: versions 1.1 and 1.2 don't know that name, so they show "Update needed" and stop saving online instead of loading the castle and later overwriting it with a smaller one. The game skips that entry when it loads.
+- Version 3 saves (no `island`) still load: they get the 300 × 300 starting island, with the castle in the middle where it was.
+- A save with `v` above 4, or an island bigger than this copy allows, counts as being from a newer version.

@@ -32,7 +32,12 @@
   const AT_KEY = 'stack-a-castle:edited-at';
   const CHARS_KEY = 'stack-a-castle:characters';
   const SOUND_KEY = 'stack-a-castle:sound';
-  const HALF = 50, MAXY = 32; // platform is HALF*2 squares wide; MAXY = height limit
+  const ISLAND_KEY = 'stack-a-castle:island';
+  // The island is half * 2 squares wide. Every castle starts at START_HALF and can grow by GROW
+  // squares on each side (⋯ → Bigger island) up to MAX_HALF. MAXY is the height limit.
+  const START_HALF = 150, GROW = 50, MAX_HALF = 500, MAXY = 32; // 300 × 300, growing to 1000 × 1000
+  const BASE_HALF = 50; // the island mesh is built at this size and scaled
+  let half = START_HALF;
 
   /* ---------- helpers ---------- */
   function rng(seed) {
@@ -489,11 +494,12 @@
     return boxUV(merge(parts));
   }
   function rockGeometry() {
-    const geo = new THREE.ConeGeometry(HALF + 0.6, 26, 12, 3);
+    const geo = new THREE.ConeGeometry(BASE_HALF + 0.6, 26, 12, 3);
     const p = geo.attributes.position, r = rng(41);
     for (let i = 0; i < p.count; i++) {
       const y = p.getY(i);
-      if (y < 12.9) { p.setX(i, p.getX(i) * (0.88 + r() * 0.24)); p.setZ(i, p.getZ(i) * (0.88 + r() * 0.24)); p.setY(i, y + (r() - 0.5) * 0.8); }
+      if (y < -12.9) { const k = 0.9 + r() * 0.08; p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); } // the top edge stays tucked under the island
+      else if (y < 12.9) { p.setX(i, p.getX(i) * (0.88 + r() * 0.24)); p.setZ(i, p.getZ(i) * (0.88 + r() * 0.24)); p.setY(i, y + (r() - 0.5) * 0.8); }
     }
     geo.computeVertexNormals();
     return geo;
@@ -534,7 +540,7 @@
   const T = {
     stone: tex(stoneC), tower: tex(stoneC, 3, 1), brick: tex(brickCanvas()), wood: tex(woodCanvas()),
     win: tex(winC), winE: tex(winE), roof: tex(roofCanvas(), 4, 2), gold: tex(goldCanvas()),
-    water: tex(waterCanvas()), grass: tex(grassCanvas(), HALF, HALF), dirt: tex(dirtCanvas(), HALF, 1),
+    water: tex(waterCanvas()), grass: tex(grassCanvas(), BASE_HALF, BASE_HALF), dirt: tex(dirtCanvas(), BASE_HALF, 1),
     flag: tex(flagCanvas()), glow: new THREE.CanvasTexture(glowCanvas())
   };
   const std = (o) => new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.9, metalness: 0 }, o));
@@ -1010,7 +1016,7 @@
   }
 
   /* ---------- island ---------- */
-  const island = new THREE.Mesh(new THREE.BoxGeometry(HALF * 2, 1.6, HALF * 2), [M.dirt, M.dirt, M.grass, M.dirt, M.dirt, M.dirt]);
+  const island = new THREE.Mesh(new THREE.BoxGeometry(BASE_HALF * 2, 1.6, BASE_HALF * 2), [M.dirt, M.dirt, M.grass, M.dirt, M.dirt, M.dirt]);
   island.position.y = -0.8;
   island.receiveShadow = true;
   scene.add(island);
@@ -1035,10 +1041,45 @@
       }
       g.position.set(x, y, z);
       g.userData.speed = 0.35 + r() * 0.4;
+      g.userData.z = z;
       scene.add(g);
       clouds.push(g);
     }
   })();
+  let cloudSpread = 1; // clouds stay outside the island as it grows
+  let shownHalf = half; // the island's drawn size; it eases toward half when the island grows
+  function sizeIsland(h) {
+    const k = h / BASE_HALF, ky = Math.sqrt(k);
+    island.scale.set(k, 1, k);
+    rock.scale.set(k, ky, k); // deeper rock under a bigger island
+    rock.position.y = -1.6 - 13 * ky;
+    // keep one grass square per grid square, lined up with the blocks, at any size
+    T.grass.repeat.set(h, h); T.grass.offset.set(-h / 2, -h / 2);
+    T.dirt.repeat.set(h, 1); T.dirt.offset.set(-h / 2, 0);
+    const f = (h + 60) / (BASE_HALF + 60);
+    for (const c of clouds) { c.position.x *= f / cloudSpread; c.position.z = c.userData.z * f; c.scale.setScalar(Math.pow(f, 0.85)); }
+    cloudSpread = f;
+  }
+  // Change the island's size: the edges (for building and picking), the camera's reach, and the
+  // drawing (smoothly, if asked). Characters left outside walk back onto the island.
+  function setIsland(h, smooth) {
+    half = h;
+    LO[0] = LO[2] = -h; HI[0] = HI[2] = h;
+    controls.maxDistance = Math.max(210, h * 2.6);
+    camera.far = Math.max(700, h * 5);
+    camera.updateProjectionMatrix();
+    if (!smooth || reduceMotion) { shownHalf = h; sizeIsland(h); }
+    keepCharsOnIsland();
+    showIslandSize();
+  }
+  // The island a castle needs: its saved width (or the starting size), with room for every block and character.
+  function islandFor(list, charList, width) {
+    let need = width > 0 ? Math.ceil(width / 2) : START_HALF;
+    const fit = (x, z) => { need = Math.max(need, -x, x + 1, -z, z + 1); };
+    for (const e of list || []) fit(e[0], e[2]);
+    for (const c of charList || []) fit(c[1], c[3]);
+    return Math.min(MAX_HALF, Math.max(START_HALF, need));
+  }
 
   const blockGroup = new THREE.Group();
   scene.add(blockGroup);
@@ -1071,7 +1112,8 @@
   // world maps "x,y,z" to a block record: { t: piece, r: rotation, x, y, z } plus how it is drawn.
   const world = new Map();
   const K = (x, y, z) => x + ',' + y + ',' + z;
-  const inBounds = (x, y, z) => x >= -HALF && x < HALF && z >= -HALF && z < HALF && y >= 0 && y < MAXY;
+  const inBounds = (x, y, z) => x >= -half && x < half && z >= -half && z < half && y >= 0 && y < MAXY;
+  const inMax = (x, y, z) => x >= -MAX_HALF && x < MAX_HALF && z >= -MAX_HALF && z < MAX_HALF && y >= 0 && y < MAXY; // fits the biggest island
   const pops = [];
   const easeOutBack = (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
   function startPop(obj, delay, rec) {
@@ -1253,7 +1295,7 @@
   }
   function validList(list) {
     return Array.isArray(list) && list.every((e) => Array.isArray(e) && e.length >= 4 &&
-      Number.isInteger(e[0]) && Number.isInteger(e[1]) && Number.isInteger(e[2]) && inBounds(e[0], e[1], e[2]) && !!PIECE[e[3]] && !CHAR_SET.has(e[3]));
+      Number.isInteger(e[0]) && Number.isInteger(e[1]) && Number.isInteger(e[2]) && inMax(e[0], e[1], e[2]) && !!PIECE[e[3]] && !CHAR_SET.has(e[3]));
   }
   function loadBlocks(list, animate) {
     clearBlocks();
@@ -1565,7 +1607,10 @@
     return { min, max, ok: inBounds(min.x, min.y, min.z) && inBounds(max.x, max.y, max.z) };
   }
   function placeLandmark(l, at, r) {
-    if (!landmarkSpot(l, at, r).ok) { toast('There isn’t room for ' + l.called + ' here. Try a big open space.'); return false; }
+    if (!landmarkSpot(l, at, r).ok) {
+      toast('There isn’t room for ' + l.called + ' here. Try a big open space' + (half < MAX_HALF ? ', or make the island bigger from the ⋯ menu.' : '.'));
+      return false;
+    }
     const added = [];
     for (const [x, y, z, t, br] of l.blocks) {
       const [dx, dz] = turnXZ(x, z, r), rr = turnRot(t, br, r);
@@ -1811,10 +1856,19 @@
     if (opts && opts.record) { const s = charSpot(c); pushUndo({ op: 'removeChar', kind: c.kind, x: s.x, y: s.y, z: s.z }); }
     return true;
   }
+  function keepCharsOnIsland() {
+    const inside = (p) => inBounds(p.x, 0, p.z);
+    const pull = (p) => { p.x = Math.max(-half, Math.min(half - 1, p.x)); p.z = Math.max(-half, Math.min(half - 1, p.z)); };
+    for (const c of chars) {
+      if (inside(c.home) && (c.kind === 'dragon' || inside(c.cell))) continue;
+      pull(c.home);
+      if (c.kind !== 'dragon') { c.cell = { x: c.home.x, y: Math.max(0, findStand(c.home.x, c.home.y, c.home.z)), z: c.home.z }; c.moving = false; }
+    }
+  }
   function serializeChars() { return chars.map((c) => { const s = charSpot(c); return [c.kind, s.x, s.y, s.z]; }); }
   function validChars(list) {
     return Array.isArray(list) && list.every((e) => Array.isArray(e) && e.length >= 4 && CHAR_SET.has(e[0]) &&
-      Number.isInteger(e[1]) && Number.isInteger(e[2]) && Number.isInteger(e[3]) && inBounds(e[1], e[2], e[3]));
+      Number.isInteger(e[1]) && Number.isInteger(e[2]) && Number.isInteger(e[3]) && inMax(e[1], e[2], e[3]));
   }
   function loadChars(list) {
     while (chars.length) removeChar(chars[0]);
@@ -1904,6 +1958,7 @@
     store.set(SAVE_KEY, JSON.stringify(serialize()));
     store.set(CHARS_KEY, JSON.stringify(serializeChars()));
     store.set(NIGHT_KEY, nightTarget === 1 ? '1' : '0');
+    store.set(ISLAND_KEY, String(half * 2));
   }
   function changed() {
     refreshUI();
@@ -1949,9 +2004,14 @@
   }
   // A save that uses pieces or characters this copy of the game doesn't know was made by a newer
   // version. It is never loaded over (or saved over) the castle here.
+  // Saves since version 4 end with one extra entry using this made-up piece name. Versions
+  // 1.1 and 1.2 don't know it, so they say "Update needed" instead of loading (and later
+  // overwriting) a castle on an island bigger than they can show. This version skips it.
+  const MARKER = 'needs-newer-game';
   function fromNewerGame(d) {
     if (!d || !Array.isArray(d.pieces) || !Array.isArray(d.cells)) return false;
-    for (let i = 3; i < d.cells.length; i += 5) { const id = d.pieces[d.cells[i]]; if (typeof id === 'string' && !PIECE[id]) return true; }
+    if ((typeof d.v === 'number' && d.v > 4) || (typeof d.island === 'number' && d.island > MAX_HALF * 2)) return true;
+    for (let i = 3; i < d.cells.length; i += 5) { const id = d.pieces[d.cells[i]]; if (typeof id === 'string' && !PIECE[id] && id !== MARKER) return true; }
     if (!Array.isArray(d.charKinds) || !Array.isArray(d.chars)) return false;
     for (let i = 0; i < d.chars.length; i += 4) { const k = d.charKinds[d.chars[i]]; if (typeof k === 'string' && !CHAR_SET.has(k)) return true; }
     return false;
@@ -1963,15 +2023,19 @@
     toast('Your castle was saved by a newer version of the game. Reload the page to get it.');
   }
   function encodeCastle() {
-    const ids = PIECES.map((p) => p.id), at = new Map(ids.map((id, i) => [id, i])), cells = [], cs = [];
+    const ids = PIECES.map((p) => p.id).concat(MARKER), at = new Map(ids.map((id, i) => [id, i])), cells = [], cs = [];
     for (const b of world.values()) cells.push(b.x, b.y, b.z, at.get(b.t), b.r || 0);
+    cells.push(0, 0, 0, ids.length - 1, 0); // the marker (see MARKER)
     for (const c of serializeChars()) cs.push(CHAR_IDS.indexOf(c[0]), c[1], c[2], c[3]);
-    return { v: 3, pieces: ids, cells, charKinds: CHAR_IDS, chars: cs, night: nightTarget === 1, savedAt: Date.now(), writer: TAB };
+    return { v: 4, island: half * 2, pieces: ids, cells, charKinds: CHAR_IDS, chars: cs, night: nightTarget === 1, savedAt: Date.now(), writer: TAB };
   }
   function decodeCastle(d) {
     if (!d || !Array.isArray(d.pieces) || !Array.isArray(d.cells) || d.cells.length % 5) return null;
     const out = [];
-    for (let i = 0; i < d.cells.length; i += 5) out.push([d.cells[i], d.cells[i + 1], d.cells[i + 2], d.pieces[d.cells[i + 3]], d.cells[i + 4] || 0]);
+    for (let i = 0; i < d.cells.length; i += 5) {
+      const t = d.pieces[d.cells[i + 3]];
+      if (t !== MARKER) out.push([d.cells[i], d.cells[i + 1], d.cells[i + 2], t, d.cells[i + 4] || 0]);
+    }
     return validList(out) ? out : null;
   }
   function decodeChars(d) {
@@ -1980,8 +2044,9 @@
     for (let i = 0; i < d.chars.length; i += 4) out.push([d.charKinds[d.chars[i]], d.chars[i + 1], d.chars[i + 2], d.chars[i + 3]]);
     return validChars(out) ? out : [];
   }
-  function sameAsWorld(list, charList) {
+  function sameAsWorld(list, charList, width) {
     const kinds = (a) => a.map((c) => c[0]).sort().join(',');
+    if (width > 0 && islandFor(list, charList, width) !== half) return false;
     if (charList && kinds(charList) !== kinds(serializeChars())) return false;
     if (list.length !== world.size) return false;
     return list.every((e) => { const b = world.get(K(e[0], e[1], e[2])); return !!b && b.t === e[3] && (b.r || 0) === (e[4] || 0); });
@@ -2027,8 +2092,10 @@
     }
   }
   function applyRemote(list, d) {
+    const charList = Array.isArray(d.chars) ? decodeChars(d) : null;
+    setIsland(islandFor(list, charList || serializeChars(), d.island), true);
     loadBlocks(list, false);
-    if (Array.isArray(d.chars)) loadChars(decodeChars(d));
+    if (charList) loadChars(charList);
     undoStack.length = 0;
     refreshUI();
     if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
@@ -2042,10 +2109,11 @@
       else if (a.op === 'remove') removeBlock(a.x, a.y, a.z);
       else if (a.op === 'addChar') addChar(a.kind, a.x, a.y, a.z);
       else if (a.op === 'many') for (const e of a.list) addBlock(e[0], e[1], e[2], e[3], e[4]);
+      else if (a.op === 'island' && a.to > half) setIsland(a.to, true);
     }
   }
   function useAccountCastle(list, d, ops, undoable) {
-    const before = undoable ? { blocks: serialize(), chars: serializeChars() } : null;
+    const before = undoable ? { blocks: serialize(), chars: serializeChars(), island: half * 2 } : null;
     applyRemote(list, d);
     if (before) pushUndo({ op: 'bulk', before });
     if (ops.length) { replayOps(ops); store.set(AT_KEY, String(Date.now())); saveLocal(); }
@@ -2061,7 +2129,7 @@
     const list = decodeCastle(d);
     if (!list) { scheduleCloudSave(0); return; }
     const charList = Array.isArray(d.chars) ? decodeChars(d) : null;
-    if (sameAsWorld(list, charList)) {
+    if (sameAsWorld(list, charList, d.island)) {
       if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
       const needUpgrade = !Array.isArray(d.chars) && chars.length > 0;
       if (ops.length || cloud.pending || needUpgrade) scheduleCloudSave(0); else setSave('saved');
@@ -2122,7 +2190,7 @@
     if (cloud.pending || cloud.inFlight) return; // this device's newer edits will win
     const list = decodeCastle(d);
     if (!list) return;
-    if (!sameAsWorld(list, Array.isArray(d.chars) ? decodeChars(d) : null)) applyRemote(list, d); // live update from another device
+    if (!sameAsWorld(list, Array.isArray(d.chars) ? decodeChars(d) : null, d.island)) applyRemote(list, d); // live update from another device
     else if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
     setSave('saved');
   }
@@ -2218,8 +2286,9 @@
     if (undoStack.length > 300) undoStack.shift();
     if (cloud.earlyOps) cloud.earlyOps.push(a);
   }
-  function bulk(list, animate, charList) {
-    const before = { blocks: serialize(), chars: serializeChars() };
+  function bulk(list, animate, charList, width) { // replace the whole castle (width: its island, or keep this one)
+    const before = { blocks: serialize(), chars: serializeChars(), island: half * 2 };
+    setIsland(islandFor(list, charList, width || half * 2), true);
     loadBlocks(list, animate);
     loadChars(charList || []);
     pushUndo({ op: 'bulk', before });
@@ -2232,8 +2301,12 @@
     else if (a.op === 'remove') addBlock(a.x, a.y, a.z, a.t, a.r, { pop: true });
     else if (a.op === 'addChar') { const c = chars.find((q) => q.id === a.id); if (c) removeChar(c); }
     else if (a.op === 'removeChar') addChar(a.kind, a.x, a.y, a.z, { pop: true });
-    else if (a.op === 'bulk') { loadBlocks(a.before.blocks, false); loadChars(a.before.chars); }
+    else if (a.op === 'bulk') {
+      setIsland(islandFor(a.before.blocks, a.before.chars, a.before.island), true);
+      loadBlocks(a.before.blocks, false); loadChars(a.before.chars);
+    }
     else if (a.op === 'many') for (const e of a.list) removeBlock(e[0], e[1], e[2]);
+    else if (a.op === 'island') setIsland(islandFor(serialize(), null, a.from * 2), true);
     changed();
     blip('undo');
     refreshGhost();
@@ -2252,7 +2325,8 @@
         place: ['triangle', 240, 90, 0.28, 0.16],
         remove: ['sine', 200, 480, 0.18, 0.14],
         undo: ['sine', 420, 260, 0.12, 0.12],
-        snap: ['square', 1500, 500, 0.06, 0.08]
+        snap: ['square', 1500, 500, 0.06, 0.08],
+        grow: ['sine', 180, 540, 0.2, 0.6]
       }[kind] || ['sine', 300, 200, 0.1, 0.1];
       o.type = spec[0];
       o.frequency.setValueAtTime(spec[1], t);
@@ -2419,6 +2493,25 @@
   });
   $('#m-sample').addEventListener('click', () => { bulk(sampleCastle(), true, sampleChars()); openMenu(false); resetView(); });
   $('#m-view').addEventListener('click', () => { resetView(); openMenu(false); });
+
+  /* bigger island */
+  const growBtn = $('#m-grow');
+  function showIslandSize() {
+    const w = half * 2;
+    $('#grow-state').textContent = half >= MAX_HALF ? 'Biggest' : w + '×' + w;
+    growBtn.disabled = half >= MAX_HALF;
+  }
+  function growIsland() {
+    if (half >= MAX_HALF) return;
+    const from = half, to = Math.min(MAX_HALF, half + GROW);
+    setIsland(to, true);
+    pushUndo({ op: 'island', from, to });
+    changed();
+    blip('grow');
+    hideHint();
+    toast('The island grew to ' + to * 2 + ' × ' + to * 2 + ' squares! Undo makes it smaller again.');
+  }
+  growBtn.addEventListener('click', () => { openMenu(false); growIsland(); });
   $('#m-spin').addEventListener('click', () => {
     controls.autoRotate = !controls.autoRotate;
     $('#spin-state').textContent = controls.autoRotate ? 'On' : 'Off';
@@ -2471,7 +2564,7 @@
     if (fromNewerGame(d)) { toast('This castle was made with a newer version of the game. Reload the page, then open it again.'); return; }
     const list = decodeCastle(d);
     if (!list) { toast('That file is not a Stack-a-Castle save'); return; }
-    bulk(list, true, Array.isArray(d.chars) ? decodeChars(d) : []);
+    bulk(list, true, Array.isArray(d.chars) ? decodeChars(d) : [], d.island);
     if (typeof d.night === 'boolean' && d.night !== (nightTarget === 1)) setNight(d.night);
     resetView();
     toast('Castle loaded. Undo puts the old one back.');
@@ -2589,7 +2682,7 @@
   const ndc = new THREE.Vector2();
   // Walks the ray square by square through the island's grid (a "voxel walk") until it meets a
   // block or the grass. This costs the same for 10 blocks or 10,000.
-  const LO = [-HALF, 0, -HALF], HI = [HALF, MAXY, HALF];
+  const LO = [-half, 0, -half], HI = [half, MAXY, half]; // updated by setIsland
   function pickCell(ray) {
     const O = [ray.origin.x, ray.origin.y, ray.origin.z], D = [ray.direction.x, ray.direction.y, ray.direction.z];
     let t0 = 0, t1 = Infinity, axis = -1;
@@ -2610,7 +2703,7 @@
       tDelta[a] = step[a] ? Math.abs(1 / D[a]) : Infinity;
     }
     let face = axis, t = t0;
-    for (let i = 0; i < 400; i++) {
+    for (let i = 0, n = half * 4 + MAXY + 8; i < n; i++) {
       if (world.has(K(cell[0], cell[1], cell[2]))) {
         if (face < 0) return null; // the camera is inside a block
         const n = [0, 0, 0]; n[face] = -step[face];
@@ -2797,11 +2890,14 @@
     const t = clock.elapsedTime;
     watchSpeed(raw);
     controls.update();
-    controls.target.x = Math.max(-HALF, Math.min(HALF, controls.target.x));
-    controls.target.z = Math.max(-HALF, Math.min(HALF, controls.target.z));
+    controls.target.x = Math.max(-half, Math.min(half, controls.target.x));
+    controls.target.z = Math.max(-half, Math.min(half, controls.target.z));
     controls.target.y = Math.max(0, Math.min(10, controls.target.y));
     sun.position.copy(controls.target).add(sunOffset);
     sun.target.position.copy(controls.target);
+    // zoomed far out over a big island, move the near limit out too, so distant surfaces don't flicker
+    const near = Math.min(4, Math.max(0.1, camera.position.distanceTo(controls.target) / 600));
+    if (Math.abs(near - camera.near) > camera.near * 0.1) { camera.near = near; camera.updateProjectionMatrix(); }
     if (nightT !== nightTarget) {
       const step = dt / 0.9;
       nightT = nightTarget > nightT ? Math.min(nightTarget, nightT + step) : Math.max(nightTarget, nightT - step);
@@ -2811,7 +2907,7 @@
       waveFlag(t);
       T.water.offset.set(t * 0.03, t * 0.012);
       T.lava.offset.set(t * 0.012, t * 0.007);
-      for (const c of clouds) { c.position.x += dt * c.userData.speed; if (c.position.x > 165) c.position.x = -165; }
+      for (const c of clouds) { c.position.x += dt * c.userData.speed; if (c.position.x > 165 * cloudSpread) c.position.x = -165 * cloudSpread; }
     }
     for (const o of flickers) {
       const fk = o.userData.flicker, ph = fk.phase;
@@ -2828,6 +2924,11 @@
         if (k >= 1) { p.obj.scale.setScalar(1); pops.splice(i, 1); if (p.rec) popDone(p.rec); continue; }
         p.obj.scale.setScalar(Math.max(0.001, easeOutBack(k)));
       }
+    }
+    if (shownHalf !== half) { // the island spreads out (or back) smoothly
+      const d = half - shownHalf, step = Math.max(Math.abs(d) * 5, 12) * dt;
+      shownHalf = Math.abs(d) <= step ? half : shownHalf + Math.sign(d) * step;
+      sizeIsland(shownHalf);
     }
     if (clearDirty) buildClear(); else sortClear(false);
     updateChars(dt, t);
@@ -2848,11 +2949,12 @@
       if (raw) { try { const parsed = JSON.parse(raw); if (validList(parsed)) blocks = parsed; } catch (e) { /* ignore */ } }
     }
     if (!blocks) blocks = sampleCastle();
-    loadBlocks(blocks, false);
     if (!charList) {
       const rawC = store.get(CHARS_KEY);
       if (rawC) { try { const pc = JSON.parse(rawC); if (validChars(pc)) charList = pc; } catch (e) { /* ignore */ } }
     }
+    setIsland(islandFor(blocks, charList, Number(store.get(ISLAND_KEY)) || 0)); // older saves get the new, bigger starting island
+    loadBlocks(blocks, false);
     if (!charList) { charList = starterChars(); }
     loadChars(charList);
     if (!store.get(CHARS_KEY)) store.set(CHARS_KEY, JSON.stringify(serializeChars()));
