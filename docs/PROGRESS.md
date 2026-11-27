@@ -4,7 +4,7 @@ _Last updated: 27 Nov 2026 · Current version: **v1.3.0**_
 
 ## Where things stand
 
-**v1.3.0 is built** (27 Nov 2026): islands start at 300 × 300 and can grow to 1000 × 1000 from the ⋯ menu. It goes live when its pull request is merged into `main`. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live; two checks on real devices are still open (see **Next up**). Next comes **v1.4, "A livelier island"**. (Landmarks and the bigger island were added on request, so the later milestones moved down.)
+**v1.3.0 is live** (27 Nov 2026): islands start at 300 × 300 and can grow to 1000 × 1000 from the ⋯ menu. It is the first part of **v1.3, "A bigger, livelier island"**; the rest (new and smarter characters, more pieces, a day–night cycle, weather) comes next as v1.3 updates. **v1.2.0** (Landmarks) and **v1.1.0** ("Smooth and solid", plus furniture) are live too; two checks on real devices are still open (see **Next up**).
 
 v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file backups, and online with Google sign-in (Firebase), confirmed with a real Google sign-in on the live site.
 
@@ -48,12 +48,12 @@ v1.0.0 was released on 26 Nov 2026. Saving works on the device, through file bac
 
 ## Next up
 
-1. **Merge v1.3.0**, then reload the game on every family device (see the first known issue). Publish the GitHub releases for v1.1.0, v1.2.0 and v1.3.0 (this session can't push tags, so they are made on GitHub's Releases page).
+1. **Reload the game on every family device** (see the first known issue). Publish the GitHub releases for v1.1.0, v1.2.0 and v1.3.0 (this session can't push tags, so they are made on GitHub's Releases page).
 2. **Check on the oldest tablet:** open a big castle (about 2,000 blocks, 20 characters) and see that spinning and building feel smooth. This finishes v1.1's "done when".
 3. **Check live sync:** sign in on two devices, build on one, and watch the other update.
-4. Then **v1.4, "A livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
+4. Then the rest of **v1.3, "A bigger, livelier island"**: new characters, smarter characters (sitting on chairs, sleeping in beds), more pieces, a day–night cycle and weather.
 
-The full list, and the milestones after it (v1.5 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
+The full list, and the milestones after it (v1.4 many castles, v2.0 quests, v3.0 build together), are in [ROADMAP.md](ROADMAP.md).
 
 ## Known issues and limits
 
