@@ -2,6 +2,32 @@
 
 All notable changes, newest first. Planned work is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## v1.3.1 — 27 Nov 2026
+
+Nature, digging, and a new sample castle.
+
+**Nature**
+- **Water** runs down and spreads into empty squares nearby (up to 3 squares), pours off towers as a waterfall, and fills holes.
+- **Lava** flows a little, slowly, and cools into cobblestone where it touches water.
+- **Ice and snow** melt into water next to something hot: lava, a torch, a fireplace, candles, a lamp or a lantern.
+- **Sand** falls when nothing is under it.
+- It only starts from something you build, remove or dig, so opening a castle never changes it. One Undo takes back your change and everything it set off.
+- **⋯ → Nature** turns it off, for anyone who wants blocks to stay right where they put them.
+
+**Digging**
+- A new **Dig** tool (a shovel) is the first tile in the Nature tab. Tap the grass to dig a hole; tap inside it to dig deeper, up to 3 squares. Undo fills it back in.
+- Holes can hold blocks, water and characters. Characters can fall in, and deep holes can trap them.
+
+**New sample castle**
+- Bigger and taller: a moat dug into the ground and filled with water, a bridge and cobblestone path, a gatehouse with turrets, curtain walls, four round towers, and a three-story keep with a tower on top.
+- The keep is furnished: a great hall with a long table, throne and fireplace, bedrooms upstairs, and a storeroom at the top.
+
+**Fixes**
+- The Great Pyramid landmark now has hidden stone inside holding up its sand, so it doesn't cave in when sand falls.
+
+**Saving**
+- Save format version 5 stores holes. Older saves still load. Version 1.3.0 left open in a tab says "Update needed" instead of overwriting a castle with holes.
+
 ## v1.3.0 — 27 Nov 2026
 
 A much bigger island.

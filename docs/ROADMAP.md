@@ -1,6 +1,6 @@
 # Roadmap
 
-_Current version: **v1.3.0** (27 Nov 2026). Last updated: 27 Nov 2026._
+_Current version: **v1.3.1** (27 Nov 2026). Last updated: 27 Nov 2026._
 
 This lists planned milestones in order. Each one has a goal, what's in it, and how we'll know it's done. Sizes are rough: **S** is an evening, **M** a few sessions, **L** a week or more of sessions. Plans can change; when they do, update this file and [PROGRESS.md](PROGRESS.md).
 
@@ -9,7 +9,7 @@ This lists planned milestones in order. Each one has a goal, what's in it, and h
 | [v1.0](#v10--the-castle-builder-released) | The castle builder | ✅ Released 26 Nov 2026 |
 | [v1.1](#v11--smooth-and-solid) | Smooth and solid (plus furniture) | ✅ Built 26 Nov 2026 · two checks on real devices left |
 | [v1.2](#v12--landmarks-released) | Landmarks | ✅ Released 26 Nov 2026 |
-| [v1.3](#v13--a-bigger-livelier-island) | A bigger, livelier island | 🚧 In progress · bigger island live (v1.3.0) |
+| [v1.3](#v13--a-bigger-livelier-island) | A bigger, livelier island | 🚧 In progress · bigger island (v1.3.0), nature and digging (v1.3.1) done |
 | [v1.4](#v14--many-castles) | Many castles | Planned |
 | [v2.0](#v20--quests-and-challenges) | Quests and challenges | Planned |
 | [v3.0](#v30--build-together) | Build together | Idea |
@@ -68,9 +68,10 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 | New pieces: arch, bridge, ladder, well, banner (in colors), flower bed (the bench arrived early, in v1.1's Furniture tab) | M |
 | Automatic day–night cycle (optional), with a sunrise and sunset | S |
 | Weather: rain and snow you can turn on | S |
-| Nature that behaves like nature: water flows into holes, lava flows and cools into stone, ice and snow melt, sand falls (details below) | L |
+| ✅ Nature that behaves like nature: water flows into holes, lava flows and cools into stone, ice and snow melt, sand falls (details below) (v1.3.1) | L |
+| ✅ Added on request: a **Dig** tool for holes up to 3 deep, and a bigger, taller sample castle with a real moat dug into the ground and a furnished three-story keep (v1.3.1) | M |
 
-**Nature effects, as planned:**
+**Nature effects** (built in v1.3.1; the details are in [ARCHITECTURE.md](ARCHITECTURE.md#nature)):
 
 - **Water** runs down and sideways into empty squares next to it: it pours off the edge of a tower, fills a hole dug beside a moat, and stops after a few squares on flat ground, so it can't flood the island.
 - **Lava** flows the same way, but slower and not as far. Where lava touches water, it cools into stone.
@@ -79,11 +80,11 @@ Everything in the first release. Details are in [CHANGELOG.md](../CHANGELOG.md).
 - Effects start from something a player builds or removes, so a castle never changes by itself just from being opened, and existing moats and ice stay as they are.
 - One Undo takes back a change together with everything it set off.
 - A **Nature** switch in the ⋯ menu turns the effects off for anyone who wants things to stay exactly where they put them.
-- Flowing water and lava are saved as ordinary blocks, so the save format doesn't change.
+- Flowing water and lava are saved as ordinary blocks; only the holes needed a save-format change (version 5).
 
 Many block-building games have flowing water and lava; ours will follow the same ideas with its own rules and look.
 
-**Done when:** an existing castle opens on the bigger island, which can grow to 1000 × 1000 and back with the size kept everywhere (done); the new pieces and characters are in their tabs; characters visibly use paths and benches; weather and the cycle can be switched on and off; and water, lava, ice, snow and sand behave as described above, with Undo and the Nature switch working.
+**Done when:** an existing castle opens on the bigger island, which can grow to 1000 × 1000 and back with the size kept everywhere (done); water, lava, ice, snow and sand behave as described above, with Undo and the Nature switch working (done); the new pieces and characters are in their tabs; characters visibly use paths and benches; and weather and the cycle can be switched on and off.
 
 ## v1.4 — Many castles
 
@@ -94,9 +95,9 @@ Many block-building games have flowing water and lava; ours will follow the same
 | Castle slots: create, name, switch and delete castles (each saved online and on the device) | M |
 | A "My castles" screen with a small picture of each | M |
 | Starter templates besides the sample castle (village, tower, island fort) | S |
-| Save format v5: one document per castle; older saves move over automatically | S |
+| Save format v6: one document per castle; older saves move over automatically | S |
 
-**Done when:** a signed-in player can keep at least five named castles that appear on every device, and v3 and v4 saves still load.
+**Done when:** a signed-in player can keep at least five named castles that appear on every device, and older saves (v3 to v5) still load.
 
 ## v2.0 — Quests and challenges
 
