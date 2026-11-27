@@ -2,6 +2,24 @@
 
 All notable changes, newest first. Planned work is in [docs/ROADMAP.md](docs/ROADMAP.md).
 
+## v1.3.5 — 27 Nov 2026
+
+Walk around your castle as an explorer, like in other block-building games, and weather that changes by itself. Both asked for by the family.
+
+**Walk**
+- A new **Walk** button above the tray (or **W** on a computer) makes you the **explorer**, a new character, and you see through their eyes. Tap **Eyes** (or press **V**) to look from just behind them instead.
+- On a computer: **W A S D** or the arrow keys to walk, drag to look around, **Space** to jump, **Shift** to run, **Esc** to stop.
+- On a phone or tablet: a round pad to walk (push it all the way to run), drag to look around, and an arrow button to jump.
+- Walk through doorways into rooms; doors open as you reach them. You walk straight up stairs, steps and low furniture. Walk into a ladder to climb it. In water you swim: hold jump to swim up.
+- Tapping still works while you walk: build, erase, open doors and tap characters. You can't build a block on the spot where you're standing.
+- Tap **Done** to go back to building. The explorer waits where you left them; tap them to walk again. If you stop indoors, Peek opens that floor so you can see them.
+- Next time, the explorer starts where you left them, or where you're looking if that's far away. Where they stand is kept on this device only; it isn't part of the castle's save, so the save format doesn't change.
+
+**Weather changes by itself**
+- No more picking the weather from the menu: sunny spells, rain and snow now come and go on their own, each lasting a minute or two, and fade in and out gently.
+- **Snow settles.** While it snows, the grass and the tops of blocks (walls, roofs, trees, benches) slowly turn white. When it stops, the snow melts, faster in the rain.
+- **⋯ → Weather** is now an On/Off switch. Off keeps the sky clear. It's on unless you turn it off, and each device remembers its own setting.
+
 ## v1.3.4 — 27 Nov 2026
 
 The rest of v1.3: new friends, smarter friends, new pieces, doors that open, days that pass by themselves, and weather. With this, **v1.3 is complete**.

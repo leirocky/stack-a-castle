@@ -5,7 +5,7 @@ A 3D castle builder played in the browser by a family with young kids. Live at h
 ## Start here
 
 - `docs/PROGRESS.md`: where things stand and what's next. Read it first.
-- `docs/ROADMAP.md`: milestones. Current version is v1.3.4, which finishes **v1.3 "A bigger, livelier island"** (bigger island, nature, digging, Peek, new and smarter characters, new pieces, day–night cycle, weather). Next is v1.4 "Many castles".
+- `docs/ROADMAP.md`: milestones. Current version is v1.3.5. **v1.3 "A bigger, livelier island"** is finished (bigger island, nature, digging, Peek, new and smarter characters, new pieces, day–night cycle, weather), plus Walk (a player view) added on request. Next is v1.4 "Many castles".
 - `docs/ARCHITECTURE.md`: how `js/game.js` is organized, how saving works, and the save format.
 
 ## Ground rules
@@ -21,7 +21,7 @@ A 3D castle builder played in the browser by a family with young kids. Live at h
 ## Run and check
 
 - `python3 -m http.server 8000`, then open http://localhost:8000.
-- There are no automated tests yet. Check by hand in a browser at desktop and phone width (about 390 px): place and erase, each tab, characters, undo, reload (the castle should still be there), save to a file and open it, the How to play card, Save a picture, glass and ice stacks, digging and nature (water into a hole, then Undo), Peek (each floor of the sample castle), characters at night (sleeping, gathering by fires) and by day (sitting), tapping a door to open it, ⋯ → Day and night and ⋯ → Weather, and the browser console for errors.
+- There are no automated tests yet. Check by hand in a browser at desktop and phone width (about 390 px): place and erase, each tab, characters, undo, reload (the castle should still be there), save to a file and open it, the How to play card, Save a picture, glass and ice stacks, digging and nature (water into a hole, then Undo), Peek (each floor of the sample castle), characters at night (sleeping, gathering by fires) and by day (sitting), tapping a door to open it, Walk (keys or the pad, stairs, a door, Done indoors opens Peek), ⋯ → Day and night, weather changing by itself (snow turning the tops of blocks white, then melting) and ⋯ → Weather off, and the browser console for errors.
 - Google sign-in works only on the live site (its domain is the one allowed in Firebase).
 
 ## When shipping a change
